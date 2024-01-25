@@ -1,32 +1,17 @@
-# Prerequisites
-*.d
+# IDE stuff
+.idea
+.vs
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# Build directories
+_build
+build
+cmake-build-debug
+out
 
-# Precompiled Headers
-*.gch
-*.pch
+# Xcode stuff
+*.xcworkspace
+*.xcuserdatad
+*.xcscheme
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+# Apple stuff.
+.DS_Store
