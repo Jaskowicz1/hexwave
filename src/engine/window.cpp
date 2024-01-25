@@ -82,28 +82,10 @@ void window::window_loop() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glfwPollEvents();
 
-		glBindTexture(GL_TEXTURE_2D, tex_handle);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_data);
-
-		// Render whatever you want
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, tex_handle);
-		float vertices[] = { // X, Y
-			0.f, 0.f,
-			0.87f, -0.5f,
-			-0.87f, -0.5f,
-		};
-
-		glVertexPointer(2, GL_FLOAT, sizeof (float) * 2, vertices);
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		glBegin(GL_QUADS);
-		glTexCoord2d(0,0); glVertex2i(200, 200);
-		glTexCoord2d(1,0); glVertex2i(200 + frame_width, 200);
-		glTexCoord2d(1,1); glVertex2i(200 + frame_width, 200 + frame_height);
-		glTexCoord2d(0,1); glVertex2i(200, 200 + frame_height);
-		glEnd();
-		glDisable(GL_TEXTURE_2D);
+		/*
+		 * Need to add a 2D texture here that covers the whole window.
+		 * We will then render the video to that texture.
+		 */
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
