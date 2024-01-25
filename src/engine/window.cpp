@@ -5,6 +5,8 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <fstream>
+#include <sstream>
 
 window::window() {
 
@@ -98,9 +100,41 @@ void window::window_loop() {
 				if (ImGui::MenuItem("New Project")) {
 					/* do stuff */
 				} else if (ImGui::MenuItem("Open", "Ctrl+O")) {
-					/* do stuff */
+					char filename[1024];
+					FILE *f = popen("zenity --file-selection --title=\"Open project\"", "r");
+					fgets(filename, 1024, f);
+
+					manager.remove_all_videos();
+
+					std::ifstream project_file(filename);
+					std::string file_text;
+
+					while (std::getline (project_file, file_text)) {
+						std::stringstream temp_text;
+						temp_text << file_text;
+						std::string segment;
+						std::vector<std::string> seg_list;
+
+						while(std::getline(temp_text, segment, ',')) {
+							seg_list.push_back(segment);
+						}
+
+						manager.add_video(seg_list[0], seg_list[1], std::stof(seg_list[2]));
+					}
+
+					project_file.close();
 				} else if (ImGui::MenuItem("Save", "Ctrl+S")) {
-					/* do stuff */
+					char filename[1024];
+					FILE *f = popen("zenity --file-selection --save", "r");
+					fgets(filename, 1024, f);
+
+					std::ofstream project_file(filename);
+
+					for(const auto& vid_pair : manager.get_videos()) {
+						project_file << vid_pair.second.id << "," << vid_pair.second.name << "," << vid_pair.second.length << "\n";
+					}
+
+					project_file.close();
 				} else if (ImGui::MenuItem("Quit")) {
 					close_window();
 				}

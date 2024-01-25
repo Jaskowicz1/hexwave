@@ -48,6 +48,8 @@ public:
 
 	void render_window();
 
+	std::map<std::string, video>& get_videos();
+
 	current_video_state current_video;
 
 private:

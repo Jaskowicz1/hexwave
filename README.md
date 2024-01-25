@@ -24,7 +24,7 @@ Coming soon...
 
 ## Dependencies
 
-- `cmake`
+- `cmake` (version 3.25 or higher)
 - `ffmpeg`
 - `imgui` (will auto download upon `cmake -B build`)
 - `glfw` (will auto download upon `cmake -B build`)
@@ -36,6 +36,4 @@ Coming soon...
 - `libavcodec-dev`
 - `libavformat-dev` (should install with `libavcodec-dev` but best to check)
 - `libswscale-dev`
-
-#### If you have x11:
 - `xorg-dev`

@@ -53,7 +53,8 @@ void video_manager::render_window() {
 
 		if(ImGui::BeginChild("Scrolling")) {
 			if(!videos.empty()) {
-				for (const auto& vid_pair : videos) {
+				const auto temp_videos = videos;
+				for (const auto& vid_pair : temp_videos) {
 					const video& vid = vid_pair.second;
 					std::string title("Video: " + vid.id);
 					if (ImGui::CollapsingHeader(title.c_str())) {
@@ -95,4 +96,8 @@ void video_manager::render_window() {
 
 		ImGui::End();
 	}
+}
+
+std::map<std::string, video> &video_manager::get_videos() {
+	return videos;
 }
