@@ -4,6 +4,7 @@
 #include <string_view>
 #include <string>
 #include <map>
+#include "video.h"
 
 // ffmpeg moment
 extern "C" {
@@ -11,12 +12,6 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 }
-
-struct video {
-	std::string id{};
-	std::string name{};
-	float length;
-};
 
 struct current_video_state {
 	video vid;
@@ -30,7 +25,7 @@ struct current_video_state {
 	int video_stream_index;
 	AVFrame* av_frame;
 	AVPacket* av_packet;
-	//SwsContext* sws_scaler_ctx;
+	SwsContext* sws_scaler_ctx;
 };
 
 class video_manager {

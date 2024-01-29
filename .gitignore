@@ -8,6 +8,8 @@ build
 cmake-build-debug
 out
 
+testing
+
 # Xcode stuff
 *.xcworkspace
 *.xcuserdatad

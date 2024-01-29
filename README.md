@@ -34,6 +34,6 @@ Coming soon...
 ### Linux Only:
 
 - `libavcodec-dev`
-- `libavformat-dev` (should install with `libavcodec-dev` but best to check)
+- `libavformat-dev`
 - `libswscale-dev`
 - `xorg-dev`

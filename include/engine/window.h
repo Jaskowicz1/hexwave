@@ -23,6 +23,6 @@ private:
 
 	bool testing_export{false};
 
-	GLuint tex_handle;
+	GLuint test_texture;
 
 };

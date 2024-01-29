@@ -1,7 +1,7 @@
 # Required for FetchContent_Declare()
 include(FetchContent)
 # Define CMake Minimum.
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.25)
 # Project
 project("interactive_film_engine" VERSION 0.1 DESCRIPTION "")
 
@@ -34,5 +34,6 @@ target_link_libraries(${PROJECT_NAME}
 
 # Required to ensure that include files are able to be accessed via "main.h" rather than "../../include/engine/main.h".
 target_include_directories(${PROJECT_NAME} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/engine>
 )
