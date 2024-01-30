@@ -87,6 +87,8 @@ window::window() {
 	/**
 	 * Compile shader
 	 */
+
+	/*
 	int success;
 	char infoLog[512];
 	auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -126,9 +128,13 @@ window::window() {
 	glDetachShader(program, vertexShader);
 	glDetachShader(program, fragmentShader);
 
+	 */
+
 	/**
 	 * Create vertex array and buffers
 	 */
+
+	/*
 	GLuint vao;
 	glCreateVertexArrays(1, &vao);
 
@@ -157,6 +163,7 @@ window::window() {
 	glVertexArrayElementBuffer(vao, ibo);
 	glUseProgram(program);
 	glClearColor(1, 1, 1, 1);
+	 */
 }
 
 window::~window() {
@@ -169,6 +176,8 @@ window::~window() {
 }
 
 void window::window_loop() {
+	/*
+
 	AVFormatContext* av_format_ctx = avformat_alloc_context();
 	int width, height;
 
@@ -229,12 +238,15 @@ void window::window_loop() {
 	const int frame_width = 400;
 	const int frame_height = 400;
 	uint8_t* frame_data = new uint8_t[frame_width * frame_height * 4];
+	 */
 
 	while (!glfwWindowShouldClose(glfw_window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glfwPollEvents();
 
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+		/*
 
 		int response;
 
@@ -290,6 +302,8 @@ void window::window_loop() {
 
 		glActiveTexture(GL_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, test_texture);
+
+		 */
 
 		/*
 		 * Need to add a 2D texture here that covers the whole window.

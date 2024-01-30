@@ -24,6 +24,15 @@ void video_manager::remove_all_videos() {
 	videos.clear();
 }
 
+void video_manager::add_option(video& vid, const std::string_view id, const std::string_view name, const std::string_view video_id) {
+	option opt;
+	opt.id = id;
+	opt.name = name;
+	opt.video_id = video_id;
+	vid.options.emplace_back(opt);
+}
+
+
 void video_manager::render_window() {
 	if(ImGui::Begin("Videos")) {
 		if (ImGui::Button("Add Video")) {
@@ -31,25 +40,10 @@ void video_manager::render_window() {
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Remove ALL Videos")) {
-			remove_all_videos();
+			//remove_all_videos();
 		}
 
-		if (ImGui::BeginPopup("add_video_popup")) {
-			static char id[64];
-			ImGui::InputText("ID", id, IM_ARRAYSIZE(id));
-
-			static char name[64];
-			ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
-
-			if (ImGui::Button("Add")) {
-				if(strlen(id) != 0 && strlen(name) != 0) {
-					add_video(id, name, 1.f);
-					ImGui::CloseCurrentPopup();
-				}
-			}
-
-			ImGui::EndPopup();
-		}
+		static std::string vid_id_interacting_with{""};
 
 		if(ImGui::BeginChild("Scrolling")) {
 			if(!videos.empty()) {
@@ -65,6 +59,45 @@ void video_manager::render_window() {
 						ImGui::Text("%s", id_txt.c_str());
 						std::string length_txt("Video length: " + std::to_string(vid.length));
 						ImGui::Text("%s", length_txt.c_str());
+
+						// --------------------------------------------------
+
+						ImGui::SeparatorText("Options Information");
+
+						//if (ImGui::CollapsingHeader("Options")) {
+							//for (const auto& opt : vid.options) {
+							//	ImGui::SeparatorText("Option Information");
+							//}
+						//}
+
+						if (ImGui::Button("Add Option")) {
+							if (ImGui::BeginPopup("add_option_popup")) {
+								static char id[64];
+								ImGui::InputText("ID", id, IM_ARRAYSIZE(id));
+
+								static char name[64];
+								ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
+
+								static char video_id[64];
+								ImGui::InputText("Video ID to link", video_id, IM_ARRAYSIZE(video_id));
+
+								if (ImGui::Button("Add")) {
+									if(strlen(id) != 0 && strlen(name) != 0 && strlen(video_id) != 0) {
+										add_option(videos.at(vid_id_interacting_with), id, name, video_id);
+										vid_id_interacting_with = "";
+										ImGui::CloseCurrentPopup();
+									}
+								}
+
+								ImGui::EndPopup();
+							}
+
+							ImGui::OpenPopup("add_option_popup");
+						}
+						ImGui::SameLine();
+						if (ImGui::Button("Remove All")) {
+							// Do removal of all options here.
+						}
 
 						// --------------------------------------------------
 						ImGui::SeparatorText("Video Management");
@@ -92,6 +125,23 @@ void video_manager::render_window() {
 			}
 
 			ImGui::EndChild();
+		}
+
+		if (ImGui::BeginPopup("add_video_popup")) {
+			static char id[64];
+			ImGui::InputText("ID", id, IM_ARRAYSIZE(id));
+
+			static char name[64];
+			ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
+
+			if (ImGui::Button("Add")) {
+				if(strlen(id) != 0 && strlen(name) != 0) {
+					add_video(id, name, 1.f);
+					ImGui::CloseCurrentPopup();
+				}
+			}
+
+			ImGui::EndPopup();
 		}
 
 		ImGui::End();
