@@ -189,3 +189,115 @@ void video_manager::update_option(video &vid, option &opt) {
 		x->second.video_id = opt.video_id;
 	}
 }
+
+bool video_manager::open_video(video_reader *state, const char* file) {
+	state->av_format_ctx = avformat_alloc_context();
+	if(!state->av_format_ctx) {
+		std::cout << "Failed to create an AVFormatContext." << "\n";
+		return false;
+	}
+
+	if(avformat_open_input(&state->av_format_ctx, file, NULL, NULL) != 0) {
+		std::cout << "Failed to open video file. Double check the path is correct!" << "\n";
+		return false;
+	}
+
+	AVCodecParameters* av_codec_params;
+	AVCodec* av_codec;
+	for (int i = 0; i < state->av_format_ctx->nb_streams; ++i) {
+		av_codec_params = state->av_format_ctx->streams[i]->codecpar;
+		av_codec = const_cast<AVCodec*>(avcodec_find_decoder(av_codec_params->codec_id));
+		if (!av_codec) {
+			continue;
+		}
+		if (av_codec_params->codec_type == AVMEDIA_TYPE_VIDEO) {
+			state->video_stream_index = i;
+			state->width = av_codec_params->width;
+			state->height = av_codec_params->height;
+			state->time_base = state->av_format_ctx->streams[i]->time_base;
+			break;
+		}
+	}
+
+	if (state->video_stream_index == -1) {
+		printf("Couldn't find valid video stream inside file\n");
+		return false;
+	}
+
+	// Set up a codec context for the decoder
+	state->av_codec_ctx = avcodec_alloc_context3(av_codec);
+	if (!state->av_codec_ctx) {
+		printf("Couldn't create AVCodecContext\n");
+		return false;
+	}
+	if (avcodec_parameters_to_context(state->av_codec_ctx, av_codec_params) < 0) {
+		printf("Couldn't initialize AVCodecContext\n");
+		return false;
+	}
+	if (avcodec_open2(state->av_codec_ctx, av_codec, NULL) < 0) {
+		printf("Couldn't open codec\n");
+		return false;
+	}
+
+	state->av_frame = av_frame_alloc();
+	if (!state->av_frame) {
+		printf("Couldn't allocate AVFrame\n");
+		return false;
+	}
+
+	state->av_packet = av_packet_alloc();
+	if (!state->av_packet) {
+		printf("Couldn't allocate AVPacket\n");
+		return false;
+	}
+
+	return true;
+}
+
+bool video_manager::read_video_frame(video_reader *state, uint8_t *frame_buffer) {
+	int response{-1};
+
+	while(av_read_frame(state->av_format_ctx, state->av_packet) >= 0) {
+		if(state->av_packet->stream_index != state->video_stream_index) {
+			av_packet_unref(state->av_packet);
+			continue;
+		}
+
+		response = avcodec_send_packet(state->av_codec_ctx, state->av_packet);
+		if(response < 0) {
+			std::cout << "Failed to decode packet: ";
+			return false;
+		}
+
+		response = avcodec_receive_frame(state->av_codec_ctx, state->av_frame);
+
+		if(response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
+			av_packet_unref(state->av_packet);
+			continue;
+		} else if(response < 0) {
+			std::cout << "Failed to decode packet: ";
+			return false;
+		}
+
+		av_packet_unref(state->av_packet);
+		break;
+	}
+
+	// Set up sws scaler
+	if (!state->sws_scaler_ctx) {
+		//auto source_pix_fmt = correct_for_deprecated_pixel_format(state->av_codec_ctx->pix_fmt);
+		state->sws_scaler_ctx = sws_getContext(state->width, state->height, state->av_codec_ctx->pix_fmt,
+						       state->width, state->height, AV_PIX_FMT_RGB0,
+						SWS_BILINEAR, NULL, NULL, NULL);
+	}
+	if (!state->sws_scaler_ctx) {
+		printf("Couldn't initialize sw scaler\n");
+		return false;
+	}
+
+	uint8_t* dest[4] = { frame_buffer, NULL, NULL, NULL };
+	int dest_linesize[4] = { state->width * 4, 0, 0, 0 };
+	sws_scale(state->sws_scaler_ctx, state->av_frame->data, state->av_frame->linesize, 0, state->av_frame->height, dest, dest_linesize);
+
+	return true;
+}

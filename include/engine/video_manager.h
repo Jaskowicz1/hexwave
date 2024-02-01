@@ -13,25 +13,26 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-struct current_video_state {
-	video vid;
-	int width{};
-	int height{};
+struct video_reader {
+	int width{0};
+	int height{0};
 	AVRational time_base;
-
-	// Private internal state
-	AVFormatContext* av_format_ctx;
-	AVCodecContext* av_codec_ctx;
-	int video_stream_index;
-	AVFrame* av_frame;
-	AVPacket* av_packet;
-	SwsContext* sws_scaler_ctx;
+	AVFormatContext* av_format_ctx{nullptr};
+	AVCodecContext* av_codec_ctx{nullptr};
+	int video_stream_index{-1};
+	AVFrame* av_frame{nullptr};
+	AVPacket* av_packet{nullptr};
+	SwsContext* sws_scaler_ctx{nullptr};
 };
 
 class video_manager {
 
 public:
 	video_manager() = default;
+
+	bool open_video(video_reader* state, const char* file);
+
+	bool read_video_frame(video_reader* state, uint8_t* frame_buffer);
 
 	void add_video(const video& video_to_add);
 
@@ -49,7 +50,9 @@ public:
 
 	std::map<std::string, video>& get_videos();
 
-	current_video_state current_video;
+	video current_video;
+
+	video next_video;
 
 private:
 

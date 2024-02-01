@@ -27,6 +27,8 @@ private:
 
 	AVFrame* av_frame;
 
+	AVFrame* av_frame_rgb;
+
 	AVPacket* av_packet;
 
 	AVCodecContext* av_codec_ctx;
