@@ -14,7 +14,19 @@ json video::to_json() const {
 	j["id"] = id;
 	j["name"] = name;
 	j["length"] = length;
-	//j["options"] = length;
+
+	json options_array = json::array();
+
+	for(const auto& opt_pair : options) {
+		const option& opt = opt_pair.second;
+		json opt_json;
+		opt_json["id"] = opt.id;
+		opt_json["name"] = opt.name;
+		opt_json["video_id"] = opt.video_id;
+		options_array.push_back(opt_json);
+	}
+
+	j["options"] = options_array;
 
 	return j;
 

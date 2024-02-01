@@ -1,6 +1,7 @@
 #include <iostream>
 #include "video_manager.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 
 void video_manager::add_video(const video& video_to_add) {
 	videos.emplace(video_to_add.id, video_to_add);
@@ -29,27 +30,53 @@ void video_manager::add_option(video& vid, const std::string_view id, const std:
 	opt.id = id;
 	opt.name = name;
 	opt.video_id = video_id;
-	vid.options.emplace_back(opt);
+	vid.options.emplace(id, opt);
+}
+
+static void testing() {
+	ImGui::OpenPopup("add_video_popup");
 }
 
 
 void video_manager::render_window() {
 	if(ImGui::Begin("Videos")) {
 		if (ImGui::Button("Add Video")) {
-			ImGui::OpenPopup("add_video_popup");
+			testing();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Remove ALL Videos")) {
 			//remove_all_videos();
 		}
 
-		static std::string vid_id_interacting_with{""};
+		static std::string vid_id_interacting_with;
 
 		if(ImGui::BeginChild("Scrolling")) {
+
+			if (ImGui::BeginPopup("add_options_popup")) {
+				static char id[64];
+				ImGui::InputText("ID", id, IM_ARRAYSIZE(id));
+
+				static char name[64];
+				ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
+
+				static char video_id[64];
+				ImGui::InputText("Option linked to video ID", video_id, IM_ARRAYSIZE(video_id));
+
+				if (ImGui::Button("Add")) {
+					if(strlen(id) != 0 && strlen(name) != 0 && strlen(video_id) != 0) {
+						add_option(videos[vid_id_interacting_with], id, name, video_id);
+						ImGui::CloseCurrentPopup();
+						vid_id_interacting_with = "";
+					}
+				}
+
+				ImGui::EndPopup();
+			}
+
 			if(!videos.empty()) {
-				const auto temp_videos = videos;
-				for (const auto& vid_pair : temp_videos) {
-					const video& vid = vid_pair.second;
+				auto temp_videos = videos;
+				for (auto& vid_pair : temp_videos) {
+					video& vid = vid_pair.second;
 					std::string title("Video: " + vid.id);
 					if (ImGui::CollapsingHeader(title.c_str())) {
 						// --------------------------------------------------
@@ -64,55 +91,58 @@ void video_manager::render_window() {
 
 						ImGui::SeparatorText("Options Information");
 
-						//if (ImGui::CollapsingHeader("Options")) {
-							//for (const auto& opt : vid.options) {
-							//	ImGui::SeparatorText("Option Information");
-							//}
-						//}
+						if(!vid.options.empty()) {
+							if (ImGui::CollapsingHeader("Options")) {
+								for (auto& opt_pair : vid.options) {
+									option& opt = opt_pair.second;
+									std::string opt_title("Option: " + opt.id);
+									if (ImGui::TreeNode(opt_title.c_str())) {
+										// --------------------------------------------------
+										ImGui::SeparatorText("Option Information");
 
-						if (ImGui::Button("Add Option")) {
-							if (ImGui::BeginPopup("add_option_popup")) {
-								static char id[64];
-								ImGui::InputText("ID", id, IM_ARRAYSIZE(id));
+										std::string opt_id("Option ID: " + opt.id);
+										ImGui::Text("%s", opt_id.c_str());
 
-								static char name[64];
-								ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
+										std::string opt_txt("Option name: " + opt.name);
+										ImGui::Text("%s", opt_txt.c_str());
 
-								static char video_id[64];
-								ImGui::InputText("Video ID to link", video_id, IM_ARRAYSIZE(video_id));
+										std::string opt_video_id("Option linked to video ID: " + opt.video_id);
+										ImGui::Text("%s", opt_video_id.c_str());
 
-								if (ImGui::Button("Add")) {
-									if(strlen(id) != 0 && strlen(name) != 0 && strlen(video_id) != 0) {
-										add_option(videos.at(vid_id_interacting_with), id, name, video_id);
-										vid_id_interacting_with = "";
-										ImGui::CloseCurrentPopup();
+										// --------------------------------------------------
+										ImGui::SeparatorText("End");
+
+										ImGui::TreePop();
 									}
 								}
-
-								ImGui::EndPopup();
 							}
+						} else {
+							ImGui::Text("There are no options!");
+						}
 
-							ImGui::OpenPopup("add_option_popup");
+						if (ImGui::Button(std::string("Add Option###" + vid.id).c_str())) {
+							vid_id_interacting_with = vid.id;
+							ImGui::OpenPopup("add_options_popup");
 						}
 						ImGui::SameLine();
-						if (ImGui::Button("Remove All")) {
+						if (ImGui::Button(std::string("Remove All###" + vid.id).c_str())) {
 							// Do removal of all options here.
 						}
 
 						// --------------------------------------------------
 						ImGui::SeparatorText("Video Management");
 
-						if (ImGui::Button("Play")) {
+						if (ImGui::Button(std::string("Play###" + vid.id).c_str())) {
 							std::cout << vid.name << "\n";
 						}
 						ImGui::SameLine();
-						if (ImGui::Button("Move Up")) {
+						if (ImGui::Button(std::string("Move Up###" + vid.id).c_str())) {
 						}
 						ImGui::SameLine();
-						if (ImGui::Button("Move Down")) {
+						if (ImGui::Button(std::string("Move Down###" + vid.id).c_str())) {
 						}
 						ImGui::SameLine();
-						if (ImGui::Button("Remove")) {
+						if (ImGui::Button(std::string("Remove Video###" + vid.id).c_str())) {
 							remove_video(vid.id);
 						}
 
@@ -150,4 +180,12 @@ void video_manager::render_window() {
 
 std::map<std::string, video> &video_manager::get_videos() {
 	return videos;
+}
+
+void video_manager::update_option(video &vid, option &opt) {
+	auto x = vid.options.find(opt.id);
+	if(x != vid.options.end()) {
+		x->second.name = opt.name;
+		x->second.video_id = opt.video_id;
+	}
 }

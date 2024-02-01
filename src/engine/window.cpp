@@ -10,6 +10,9 @@
 #include <fstream>
 #include <sstream>
 
+#include "ImGuiNotify.hpp"
+#include "IconsFontAwesome6.h"
+
 // ffmpeg moment
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -70,9 +73,34 @@ window::window() {
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
 	ImGui_ImplGlfw_InitForOpenGL(glfw_window, true);
 	ImGui_ImplOpenGL3_Init("#version 450 core");
+
 	ImGui::StyleColorsDark();
+
+	io.Fonts->AddFontDefault();
+
+	float baseFontSize = 16.0f; // Default font size
+	float iconFontSize = baseFontSize * 2.0f / 3.0f; // FontAwesome fonts need to have their sizes reduced by 2.0f/3.0f in order to align correctly
+
+	// Check if FONT_ICON_FILE_NAME_FAS is a valid path
+	std::ifstream fontAwesomeFile(FONT_ICON_FILE_NAME_FAS);
+
+	if (!fontAwesomeFile.good()) {
+		// If it's not good, then we can't find the font and should abort
+		std::cerr << "Could not find the FontAwesome font file." << std::endl;
+		abort();
+	}
+
+	static const ImWchar iconsRanges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
+	ImFontConfig iconsConfig;
+	iconsConfig.MergeMode = true;
+	iconsConfig.PixelSnapH = true;
+	iconsConfig.GlyphMinAdvanceX = iconFontSize;
+	io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, iconFontSize, &iconsConfig, iconsRanges);
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.TabRounding = 5.f;
@@ -176,10 +204,7 @@ window::~window() {
 }
 
 void window::window_loop() {
-	/*
-
 	AVFormatContext* av_format_ctx = avformat_alloc_context();
-	int width, height;
 
 	if (!av_format_ctx) {
 		printf("Couldn't created AVFormatContext\n");
@@ -193,7 +218,6 @@ void window::window_loop() {
 	int video_stream_index = -1;
 	AVCodecParameters* av_codec_params;
 	const AVCodec* av_codec;
-	AVRational time_base;
 	for (int i = 0; i < av_format_ctx->nb_streams; ++i) {
 		av_codec_params = av_format_ctx->streams[i]->codecpar;
 		av_codec = avcodec_find_decoder(av_codec_params->codec_id);
@@ -202,9 +226,9 @@ void window::window_loop() {
 		}
 		if (av_codec_params->codec_type == AVMEDIA_TYPE_VIDEO) {
 			video_stream_index = i;
-			width = av_codec_params->width;
-			height = av_codec_params->height;
-			time_base = av_format_ctx->streams[i]->time_base;
+			manager.current_video.width = av_codec_params->width;
+			manager.current_video.height = av_codec_params->height;
+			manager.current_video.time_base = av_format_ctx->streams[i]->time_base;
 			break;
 		}
 	}
@@ -213,7 +237,7 @@ void window::window_loop() {
 	}
 
 	// Set up a codec context for the decoder
-	AVCodecContext* av_codec_ctx = avcodec_alloc_context3(av_codec);
+	av_codec_ctx = avcodec_alloc_context3(av_codec);
 	if (!av_codec_ctx) {
 		printf("Couldn't create AVCodecContext\n");
 	}
@@ -224,12 +248,12 @@ void window::window_loop() {
 		printf("Couldn't open codec\n");
 	}
 
-	AVFrame* av_frame = av_frame_alloc();
+	av_frame = av_frame_alloc();
 	if (!av_frame) {
 		printf("Couldn't allocate AVFrame\n");
 	}
 
-	AVPacket* av_packet = av_packet_alloc();
+	av_packet = av_packet_alloc();
 	if (!av_packet) {
 		printf("Couldn't allocate AVPacket\n");
 	}
@@ -238,15 +262,12 @@ void window::window_loop() {
 	const int frame_width = 400;
 	const int frame_height = 400;
 	uint8_t* frame_data = new uint8_t[frame_width * frame_height * 4];
-	 */
 
 	while (!glfwWindowShouldClose(glfw_window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glfwPollEvents();
 
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
-		/*
 
 		int response;
 
@@ -275,17 +296,17 @@ void window::window_loop() {
 
 		// Set up sws scaler
 		if (!manager.current_video.sws_scaler_ctx) {
-			manager.current_video.sws_scaler_ctx = sws_getContext(width, height, av_codec_ctx->pix_fmt,
-							width, height, AV_PIX_FMT_RGB0,
+			manager.current_video.sws_scaler_ctx = sws_getContext(manager.current_video.width, manager.current_video.height, av_codec_ctx->pix_fmt,
+									      manager.current_video.width, manager.current_video.height, AV_PIX_FMT_RGB0,
 							SWS_BILINEAR, NULL, NULL, NULL);
 		}
 		if (!manager.current_video.sws_scaler_ctx) {
 			printf("Couldn't initialize sw scaler\n");
 		}
 
-		//uint8_t* dest[4] = { frame_buffer, NULL, NULL, NULL };
-		//int dest_linesize[4] = { width * 4, 0, 0, 0 };
-		//sws_scale(sws_scaler_ctx, av_frame->data, av_frame->linesize, 0, av_frame->height, dest, dest_linesize);
+		uint8_t* dest[4] = { frame_data, NULL, NULL, NULL };
+		int dest_linesize[4] = { manager.current_video.width * 4, 0, 0, 0 };
+		sws_scale(manager.current_video.sws_scaler_ctx, av_frame->data, av_frame->linesize, 0, av_frame->height, dest, dest_linesize);
 
 		glGenTextures(1, &test_texture);
 		glBindTexture(GL_TEXTURE_2D, test_texture);
@@ -303,8 +324,6 @@ void window::window_loop() {
 		glActiveTexture(GL_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, test_texture);
 
-		 */
-
 		/*
 		 * Need to add a 2D texture here that covers the whole window.
 		 * We will then render the video to that texture.
@@ -320,10 +339,22 @@ void window::window_loop() {
 			if (ImGui::BeginMenu("File")) {
 				if (ImGui::MenuItem("New Project")) {
 					manager.remove_all_videos();
+
+					ImGui::InsertNotification({ImGuiToastType::Success, 3000, "New project started successfully!"});
 				} else if (ImGui::MenuItem("Open", "Ctrl+O")) {
-					utilities::load_project(manager);
+					bool loaded = utilities::load_project(manager);
+
+					if(loaded)
+						ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project loaded successfully!"});
+					else
+						ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to load project. Check the file is right and project isn't corrupted. If the problem persists, report this issue!"});
 				} else if (ImGui::MenuItem("Save", "Ctrl+S")) {
-					utilities::save_project(manager);
+					bool saved = utilities::save_project(manager);
+
+					if(saved)
+						ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project saved successfully!"});
+					else
+						ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to save project. Check the file path you're saving to. If the problem persists, report this issue!"});
 				} else if (ImGui::MenuItem("Quit")) {
 					close_window();
 				}
@@ -334,10 +365,13 @@ void window::window_loop() {
 			if (ImGui::BeginMenu("Packaging")) {
 				if (ImGui::BeginMenu("Export")) {
 					if (ImGui::MenuItem("Windows")) {
+						ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
 						/* do stuff */
 					} else if (ImGui::MenuItem("Linux")) {
+						ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
 						/* do stuff */
 					} else if (ImGui::MenuItem("OSX")) {
+						ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
 						/* do stuff */
 					}
 
@@ -351,8 +385,10 @@ void window::window_loop() {
 
 			if (ImGui::BeginMenu("Play")) {
 				if (ImGui::MenuItem("In-Engine")) {
+					ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
 					/* do stuff */
 				} else if (ImGui::MenuItem("Standalone")) {
+					ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
 					/* do stuff */
 				}
 
@@ -363,6 +399,30 @@ void window::window_loop() {
 		}
 
 		manager.render_window();
+
+		/**
+		 * Notifications Rendering Start
+		 */
+
+		// Notifications style setup
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.f); // Disable round borders
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f); // Disable borders
+
+		// Notifications color setup
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.10f, 0.10f, 0.10f, 1.00f)); // Background color
+
+		// Main rendering function
+		ImGui::RenderNotifications();
+
+		//——————————————————————————————— WARNING ———————————————————————————————
+		// Argument MUST match the amount of ImGui::PushStyleVar() calls
+		ImGui::PopStyleVar(2);
+		// Argument MUST match the amount of ImGui::PushStyleColor() calls
+		ImGui::PopStyleColor(1);
+
+		/**
+		 * Notifications Rendering End
+		*/
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

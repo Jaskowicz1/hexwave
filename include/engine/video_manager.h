@@ -41,6 +41,8 @@ public:
 
 	void add_option(video& vid, const std::string_view id, const std::string_view name, const std::string_view video_id);
 
+	void update_option(video& vid, option& opt);
+
 	void remove_all_videos();
 
 	void render_window();

@@ -3,10 +3,14 @@
 #include <vector>
 #include "utilities/file_management.h"
 
-void utilities::save_project(video_manager& manager) {
+bool utilities::save_project(video_manager& manager) {
 	char filename[1024];
 	FILE *f = popen("zenity --file-selection --save --title=\"Save project\"", "r");
 	fgets(filename, 1024, f);
+
+	if(std::strlen(filename) == 0) {
+		return false;
+	}
 
 	json j;
 	json video_array = json::array();
@@ -20,12 +24,18 @@ void utilities::save_project(video_manager& manager) {
 	std::ofstream project_file(filename);
 	project_file << j.dump() << "\n";
 	project_file.close();
+
+	return true;
 }
 
-void utilities::load_project(video_manager& manager) {
+bool utilities::load_project(video_manager& manager) {
 	char filename[1024];
 	FILE *f = popen(R"(zenity --file-selection --title="Open project")", "r");
 	fgets(filename, 1024, f);
+
+	if(std::strlen(filename) == 0) {
+		return false;
+	}
 
 	manager.remove_all_videos();
 
@@ -35,7 +45,14 @@ void utilities::load_project(video_manager& manager) {
 
 	for (const auto& vid : j["videos"]) {
 		manager.add_video(vid["id"].get<std::string>(), vid["name"].get<std::string>(), vid["length"].get<float>());
+
+		for (const auto& opt : vid["options"]) {
+			manager.add_option(manager.get_videos()[vid["id"].get<std::string>()], opt["id"].get<std::string>(),
+			        opt["name"].get<std::string>(), opt["video_id"].get<std::string>());
+		}
 	}
 
 	project_file.close();
+
+	return true;
 }

@@ -12,7 +12,7 @@ struct video {
 	std::string id{};
 	std::string name{};
 	float length;
-	std::vector<option> options{};
+	std::map<std::string, option> options{};
 
 	video& fill_from_json(const json* j);
 

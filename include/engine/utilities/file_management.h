@@ -4,8 +4,8 @@
 
 namespace utilities {
 
-void save_project(video_manager& manager);
+bool save_project(video_manager& manager);
 
-void load_project(video_manager& manager);
+bool load_project(video_manager& manager);
 
 }

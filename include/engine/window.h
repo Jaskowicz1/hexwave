@@ -25,4 +25,10 @@ private:
 
 	GLuint test_texture;
 
+	AVFrame* av_frame;
+
+	AVPacket* av_packet;
+
+	AVCodecContext* av_codec_ctx;
+
 };
