@@ -1,6 +1,10 @@
 # interactive-film-engine
 A game engine that allows people to make and export interactive films!
 
+### Notice
+
+This project is still in-progress. It may not work in its current state.
+
 ## Getting Started
 
 ### Stable (Released)

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include "video_manager.h"
+#include "glm/vec2.hpp"
 #include <glad/gl.h>
 
 class window {
@@ -23,14 +24,13 @@ private:
 
 	bool testing_export{false};
 
-	GLuint test_texture;
+	GLuint video_texture;
 
-	AVFrame* av_frame;
+	GLuint vbo;
+	GLuint vao;
+	GLuint ibo;
+	GLuint shader_program;
 
-	AVFrame* av_frame_rgb;
-
-	AVPacket* av_packet;
-
-	AVCodecContext* av_codec_ctx;
+	glm::vec2 vertices[4] = {{-1, -1}, {-1, 1}, {1, 1}, {1, -1}};
 
 };

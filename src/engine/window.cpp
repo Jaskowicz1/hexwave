@@ -20,6 +20,22 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
+const char *vertex_shader_src = R"(
+#version 450
+layout (location = 0) in vec2 aPos;
+void main() {
+    gl_Position = vec4(aPos, 1, 1);
+}
+)";
+
+const char *fragment_shader_src = R"(
+#version 450
+layout (location = 0) out vec4 outColor;
+void main() {
+    outColor = vec4(1, 0, 0, 1);
+}
+)";
+
 window::window() {
 
 	// Just do a lambda here because static is nothing but ugly.
@@ -59,6 +75,10 @@ window::window() {
 
 	ImGui::StyleColorsDark();
 
+	/*
+	 * Start of notification system loading
+	 */
+
 	io.Fonts->AddFontDefault();
 
 	float baseFontSize = 16.0f; // Default font size
@@ -80,6 +100,11 @@ window::window() {
 	iconsConfig.GlyphMinAdvanceX = iconFontSize;
 	io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, iconFontSize, &iconsConfig, iconsRanges);
 
+	/*
+	 * End of notification system loading
+	 */
+
+	// Make borders round on ImGui.
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.TabRounding = 5.f;
 	style.FrameRounding = 5.f;
@@ -89,6 +114,75 @@ window::window() {
 
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEBUG_OUTPUT);
+
+	/*
+	 * Compile shader
+	 */
+	int success;
+	char infoLog[512];
+	auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertexShader, 1, &vertex_shader_src, 0);
+	glCompileShader(vertexShader);
+
+	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+	if (!success) {
+		glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
+		std::cerr << "Vertex shader compilation failed:" << std::endl;
+		std::cerr << infoLog << std::endl;
+	}
+
+	auto fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragmentShader, 1, &fragment_shader_src, 0);
+	glCompileShader(fragmentShader);
+
+	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+	if (!success) {
+		glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
+		std::cerr << "Fragment shader compilation failed:" << std::endl;
+		std::cerr << infoLog << std::endl;
+	}
+
+	auto program = glCreateProgram();
+	glAttachShader(program, vertexShader);
+	glAttachShader(program, fragmentShader);
+	glLinkProgram(program);
+
+	glGetProgramiv(program, GL_LINK_STATUS, &success);
+	if (!success) {
+		glGetShaderInfoLog(program, 512, nullptr, infoLog);
+		std::cerr << "Shader linking failed:" << std::endl;
+		std::cerr << infoLog << std::endl;
+	}
+
+	glDetachShader(program, vertexShader);
+	glDetachShader(program, fragmentShader);
+
+	/**
+	 * Create vertex array and buffers
+	 */
+	glCreateVertexArrays(1, &vao);
+
+	glEnableVertexArrayAttrib(vao, 0);
+	glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE,
+				  offsetof(glm::vec2, x));
+
+	glVertexArrayAttribBinding(vao, 0, 0);
+
+	glCreateBuffers(1, &vbo);
+	glNamedBufferStorage(vbo, sizeof(glm::vec2) * 4, vertices,
+			     GL_DYNAMIC_STORAGE_BIT);
+
+	std::uint32_t indices[] = {0, 2, 1, 2, 0, 3};
+
+	glCreateBuffers(1, &ibo);
+	glNamedBufferStorage(ibo, sizeof(std::uint32_t) * 6, indices,
+			     GL_DYNAMIC_STORAGE_BIT);
+
+	glBindVertexArray(vao);
+	glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(glm::vec2));
+	glVertexArrayElementBuffer(vao, ibo);
+	glUseProgram(program);
+
 }
 
 window::~window() {
@@ -103,10 +197,18 @@ window::~window() {
 void window::window_loop() {
 
 	video_reader vid_reader;
-	if(!manager.open_video(&vid_reader, "/home/archie/Downloads/SCENETEST.mp4")) {
+	if(!manager.open_video(&vid_reader, "/home/archie/Downloads/tf2teleporter.mp4")) {
 		std::cout << "Failed to load video." << "\n";
 		return;
 	}
+
+	glGenTextures(1, &video_texture);
+	glBindTexture(GL_TEXTURE_2D, video_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Allocate frame buffer
 	const int frame_width = vid_reader.width;
@@ -115,32 +217,29 @@ void window::window_loop() {
 
 	while (!glfwWindowShouldClose(glfw_window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glfwPollEvents();
 
 		if(!manager.read_video_frame(&vid_reader, frame_data)) {
 			std::cout << "Failed to read frame data." << "\n";
 			break;
 		}
 
-		glGenTextures(1, &test_texture);
-		glBindTexture(GL_TEXTURE_2D, test_texture);
+		/*
+		 * Need to add a 2D texture here that covers the whole window.
+		 * We will then render the video to that texture.
+		 */
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-		glBindTexture(GL_TEXTURE_2D, test_texture);
+		glBindTexture(GL_TEXTURE_2D, video_texture);
 		glTexImage2D(
 			GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_data
 		);
 
 		glActiveTexture(GL_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, test_texture);
+		glBindTexture(GL_TEXTURE_2D, video_texture);
+		glBindVertexArray(vao);
+		glDrawElements(GL_QUADS, sizeof(vertices), GL_UNSIGNED_INT, 0);
 
 		/*
-		 * Need to add a 2D texture here that covers the whole window.
-		 * We will then render the video to that texture.
+		 * Video renderer finished.
 		 */
 
 		ImGui_ImplOpenGL3_NewFrame();
@@ -242,6 +341,7 @@ void window::window_loop() {
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		glfwSwapBuffers(glfw_window);
+		glfwPollEvents();
 	}
 }
 
