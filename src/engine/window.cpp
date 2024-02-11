@@ -1,5 +1,3 @@
-#define GLFW_INCLUDE_NONE
-
 #include "window.h"
 #include "utilities/file_management.h"
 #include "glm/vec2.hpp"
@@ -13,29 +11,6 @@
 #include "ImGuiNotify.hpp"
 #include "IconsFontAwesome6.h"
 
-// ffmpeg moment
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
-}
-
-const char *vertex_shader_src = R"(
-#version 450
-layout (location = 0) in vec2 aPos;
-void main() {
-    gl_Position = vec4(aPos, 1, 1);
-}
-)";
-
-const char *fragment_shader_src = R"(
-#version 450
-layout (location = 0) out vec4 outColor;
-void main() {
-    outColor = vec4(1, 0, 0, 1);
-}
-)";
-
 window::window() {
 
 	// Just do a lambda here because static is nothing but ugly.
@@ -47,10 +22,6 @@ window::window() {
 		std::cout << "glfw failed to initialise." << "\n";
 		exit(EXIT_FAILURE);
 	}
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	glfw_window = glfwCreateWindow(1280, 720, "Interactive Film Engine", nullptr, nullptr);
 
@@ -64,6 +35,19 @@ window::window() {
 
 	if (!gladLoaderLoadGL())
 		throw std::runtime_error("Error initializing glad");
+
+	glGenTextures(1, &video_texture);
+	glBindTexture(GL_TEXTURE_2D, video_texture);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	/**
+	 * ImGUI stuff
+	 */
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -112,77 +96,9 @@ window::window() {
 	style.WindowRounding = 5.f;
 	style.PopupRounding = 5.f;
 
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEBUG_OUTPUT);
-
-	/*
-	 * Compile shader
-	 */
-	int success;
-	char infoLog[512];
-	auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertex_shader_src, 0);
-	glCompileShader(vertexShader);
-
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
-		std::cerr << "Vertex shader compilation failed:" << std::endl;
-		std::cerr << infoLog << std::endl;
-	}
-
-	auto fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragment_shader_src, 0);
-	glCompileShader(fragmentShader);
-
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
-		std::cerr << "Fragment shader compilation failed:" << std::endl;
-		std::cerr << infoLog << std::endl;
-	}
-
-	auto program = glCreateProgram();
-	glAttachShader(program, vertexShader);
-	glAttachShader(program, fragmentShader);
-	glLinkProgram(program);
-
-	glGetProgramiv(program, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(program, 512, nullptr, infoLog);
-		std::cerr << "Shader linking failed:" << std::endl;
-		std::cerr << infoLog << std::endl;
-	}
-
-	glDetachShader(program, vertexShader);
-	glDetachShader(program, fragmentShader);
-
 	/**
-	 * Create vertex array and buffers
+	 * End of ImGUI stuff
 	 */
-	glCreateVertexArrays(1, &vao);
-
-	glEnableVertexArrayAttrib(vao, 0);
-	glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE,
-				  offsetof(glm::vec2, x));
-
-	glVertexArrayAttribBinding(vao, 0, 0);
-
-	glCreateBuffers(1, &vbo);
-	glNamedBufferStorage(vbo, sizeof(glm::vec2) * 4, vertices,
-			     GL_DYNAMIC_STORAGE_BIT);
-
-	std::uint32_t indices[] = {0, 2, 1, 2, 0, 3};
-
-	glCreateBuffers(1, &ibo);
-	glNamedBufferStorage(ibo, sizeof(std::uint32_t) * 6, indices,
-			     GL_DYNAMIC_STORAGE_BIT);
-
-	glBindVertexArray(vao);
-	glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(glm::vec2));
-	glVertexArrayElementBuffer(vao, ibo);
-	glUseProgram(program);
-
 }
 
 window::~window() {
@@ -197,18 +113,12 @@ window::~window() {
 void window::window_loop() {
 
 	video_reader vid_reader;
+	// /home/archie/Documents/interactive-film-engine/testing/SCENE1.mp4
+	// /home/archie/Downloads/tf2teleporter.mp4
 	if(!manager.open_video(&vid_reader, "/home/archie/Downloads/tf2teleporter.mp4")) {
 		std::cout << "Failed to load video." << "\n";
 		return;
 	}
-
-	glGenTextures(1, &video_texture);
-	glBindTexture(GL_TEXTURE_2D, video_texture);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Allocate frame buffer
 	const int frame_width = vid_reader.width;
@@ -218,9 +128,24 @@ void window::window_loop() {
 	while (!glfwWindowShouldClose(glfw_window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if(!manager.read_video_frame(&vid_reader, frame_data)) {
+		// Set up orphographic projection
+		int window_width, window_height;
+		glfwGetWindowSize(glfw_window, &window_width, &window_height);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, window_width, window_height, 0, -1, 1);
+		glMatrixMode(GL_MODELVIEW);
+
+		int64_t pts;
+
+		if(!manager.read_video_frame(glfw_window, &vid_reader, frame_data, &pts)) {
 			std::cout << "Failed to read frame data." << "\n";
 			break;
+		}
+
+		double pt_in_seconds = pts * (double)vid_reader.time_base.num / (double)vid_reader.time_base.den;
+		while (pt_in_seconds > glfwGetTime()) {
+			glfwWaitEventsTimeout(pt_in_seconds - glfwGetTime());
 		}
 
 		/*
@@ -229,14 +154,18 @@ void window::window_loop() {
 		 */
 
 		glBindTexture(GL_TEXTURE_2D, video_texture);
-		glTexImage2D(
-			GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_data
-		);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_data);
 
-		glActiveTexture(GL_TEXTURE);
+		// Render whatever you want
+		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, video_texture);
-		glBindVertexArray(vao);
-		glDrawElements(GL_QUADS, sizeof(vertices), GL_UNSIGNED_INT, 0);
+		glBegin(GL_QUADS);
+		glTexCoord2d(0,0); glVertex2i(0, 0);
+		glTexCoord2d(1,0); glVertex2i(frame_width, 0);
+		glTexCoord2d(1,1); glVertex2i(frame_width, frame_height);
+		glTexCoord2d(0,1); glVertex2i(0, frame_height);
+		glEnd();
+		glDisable(GL_TEXTURE_2D);
 
 		/*
 		 * Video renderer finished.

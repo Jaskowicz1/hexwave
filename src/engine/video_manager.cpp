@@ -254,7 +254,7 @@ bool video_manager::open_video(video_reader *state, const char* file) {
 	return true;
 }
 
-bool video_manager::read_video_frame(video_reader *state, uint8_t *frame_buffer) {
+bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, uint8_t* frame_buffer, int64_t* pts) {
 	int response{-1};
 
 	while(av_read_frame(state->av_format_ctx, state->av_packet) >= 0) {
@@ -283,12 +283,16 @@ bool video_manager::read_video_frame(video_reader *state, uint8_t *frame_buffer)
 		break;
 	}
 
+	*pts = state->av_frame->pts;
+
 	// Set up sws scaler
 	if (!state->sws_scaler_ctx) {
-		//auto source_pix_fmt = correct_for_deprecated_pixel_format(state->av_codec_ctx->pix_fmt);
+		int window_width;
+		int window_height;
+		glfwGetWindowSize(window, &window_width, &window_height);
 		state->sws_scaler_ctx = sws_getContext(state->width, state->height, state->av_codec_ctx->pix_fmt,
-						       state->width, state->height, AV_PIX_FMT_RGB0,
-						SWS_BILINEAR, NULL, NULL, NULL);
+						       window_width, window_height, AV_PIX_FMT_RGB0,
+						       SWS_BICUBIC, NULL, NULL, NULL);
 	}
 	if (!state->sws_scaler_ctx) {
 		printf("Couldn't initialize sw scaler\n");

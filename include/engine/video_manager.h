@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include "video.h"
+#include "GLFW/glfw3.h"
 
 // ffmpeg moment
 extern "C" {
@@ -32,7 +33,7 @@ public:
 
 	bool open_video(video_reader* state, const char* file);
 
-	bool read_video_frame(video_reader* state, uint8_t* frame_buffer);
+	bool read_video_frame(GLFWwindow* window, video_reader* state, uint8_t* frame_buffer, int64_t* pts);
 
 	void add_video(const video& video_to_add);
 
