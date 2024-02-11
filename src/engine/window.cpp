@@ -12,8 +12,6 @@
 #include "IconsFontAwesome6.h"
 
 window::window() {
-
-	// Just do a lambda here because static is nothing but ugly.
 	glfwSetErrorCallback([](int error, const char* description) {
 		fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 	});
@@ -23,7 +21,7 @@ window::window() {
 		exit(EXIT_FAILURE);
 	}
 
-	glfw_window = glfwCreateWindow(1280, 720, "Interactive Film Engine", nullptr, nullptr);
+	glfw_window = glfwCreateWindow(1280, 720, "Hexwave", nullptr, nullptr);
 
 	if (!glfw_window) {
 		std::cout << "Failed to create window." << "\n";
