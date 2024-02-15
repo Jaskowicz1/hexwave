@@ -21,6 +21,11 @@ private:
 	struct GLFWwindow* glfw_window{nullptr};
 
 	video_manager manager{};
+	video_reader vid_reader;
+
+	uint16_t frame_width{0}; // vid_reader.height
+	uint16_t frame_height{0}; // vid_reader.height
+	uint8_t* frame_data{nullptr}; // = new uint8_t[frame_width * frame_height * 4];
 
 	bool testing_export{false};
 

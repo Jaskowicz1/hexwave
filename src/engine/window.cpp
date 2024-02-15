@@ -109,19 +109,12 @@ window::~window() {
 }
 
 void window::window_loop() {
-
-	video_reader vid_reader;
 	// /home/archie/Documents/interactive-film-engine/testing/SCENE1.mp4
 	// /home/archie/Downloads/tf2teleporter.mp4
-	if(!manager.open_video(&vid_reader, "/home/archie/Downloads/tf2teleporter.mp4")) {
-		std::cout << "Failed to load video." << "\n";
-		return;
-	}
-
-	// Allocate frame buffer
-	const int frame_width = vid_reader.width;
-	const int frame_height = vid_reader.height;
-	auto* frame_data = new uint8_t[frame_width * frame_height * 4];
+	//if(!manager.open_video(&vid_reader, "/home/archie/Downloads/SCENE1.mp4")) {
+	//	std::cout << "Failed to load video." << "\n";
+	//	return;
+	//}
 
 	while (!glfwWindowShouldClose(glfw_window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -134,16 +127,18 @@ void window::window_loop() {
 		glOrtho(0, window_width, window_height, 0, -1, 1);
 		glMatrixMode(GL_MODELVIEW);
 
-		int64_t pts;
+		if(!manager.current_video.name.empty()) {
+			int64_t pts;
 
-		if(!manager.read_video_frame(glfw_window, &vid_reader, frame_data, &pts)) {
-			std::cout << "Failed to read frame data." << "\n";
-			break;
-		}
+			if(!manager.read_video_frame(glfw_window, &vid_reader, frame_data, &pts)) {
+				std::cout << "Failed to read frame data." << "\n";
+				break;
+			}
 
-		double pt_in_seconds = pts * (double)vid_reader.time_base.num / (double)vid_reader.time_base.den;
-		while (pt_in_seconds > glfwGetTime()) {
-			glfwWaitEventsTimeout(pt_in_seconds - glfwGetTime());
+			double pt_in_seconds = pts * (double)vid_reader.time_base.num / (double)vid_reader.time_base.den;
+			while (pt_in_seconds > glfwGetTime()) {
+				glfwWaitEventsTimeout(pt_in_seconds - glfwGetTime());
+			}
 		}
 
 		/*

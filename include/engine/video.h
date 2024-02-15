@@ -11,7 +11,9 @@ struct option {
 struct video {
 	std::string id{};
 	std::string name{};
-	float length;
+	uint64_t length;
+	std::string path{};
+
 	std::map<std::string, option> options{};
 
 	video& fill_from_json(const json* j);

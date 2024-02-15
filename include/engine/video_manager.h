@@ -33,6 +33,8 @@ public:
 
 	bool open_video(video_reader* state, const char* file);
 
+	uint64_t get_video_length(const char* file);
+
 	bool read_video_frame(GLFWwindow* window, video_reader* state, uint8_t* frame_buffer, int64_t* pts);
 
 	void add_video(const video& video_to_add);

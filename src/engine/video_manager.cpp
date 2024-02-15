@@ -2,6 +2,7 @@
 #include "video_manager.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "ImGuiNotify.hpp"
 
 void video_manager::add_video(const video& video_to_add) {
 	videos.emplace(video_to_add.id, video_to_add);
@@ -84,8 +85,10 @@ void video_manager::render_window() {
 
 						std::string id_txt("Video name: " + vid.name);
 						ImGui::Text("%s", id_txt.c_str());
-						std::string length_txt("Video length: " + std::to_string(vid.length));
+						std::string length_txt("Video length: " + std::to_string(vid.length) + " seconds");
 						ImGui::Text("%s", length_txt.c_str());
+						std::string path_txt("Video path: " + vid.path);
+						ImGui::Text("%s", path_txt.c_str());
 
 						// --------------------------------------------------
 
@@ -164,10 +167,18 @@ void video_manager::render_window() {
 			static char name[64];
 			ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
 
+			static char path[512];
+			ImGui::InputText("Video Path", path, IM_ARRAYSIZE(path));
+
 			if (ImGui::Button("Add")) {
-				if(strlen(id) != 0 && strlen(name) != 0) {
-					add_video(id, name, 1.f);
-					ImGui::CloseCurrentPopup();
+				if(strlen(id) != 0 && strlen(name) != 0 && strlen(path) != 0) {
+					uint64_t len = get_video_length(path);
+					if(len != 0) {
+						add_video(id, name, len);
+						ImGui::CloseCurrentPopup();
+					} else {
+						ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Invalid path! Check the path of the video and make sure it's the right file type!"});
+					}
 				}
 			}
 
@@ -188,6 +199,40 @@ void video_manager::update_option(video &vid, option &opt) {
 		x->second.name = opt.name;
 		x->second.video_id = opt.video_id;
 	}
+}
+
+uint64_t video_manager::get_video_length(const char *file) {
+	AVFormatContext* av_format_ctx = avformat_alloc_context();
+	if(!av_format_ctx) {
+		std::cout << "Failed to create an AVFormatContext." << "\n";
+		return 0;
+	}
+
+	if(avformat_open_input(&av_format_ctx, file, NULL, NULL) != 0) {
+		std::cout << "Failed to open video file. Double check the path is correct!" << "\n";
+		return 0;
+	}
+
+	AVCodecParameters* av_codec_params{nullptr};
+	AVCodec* av_codec{nullptr};
+	AVRational time_base{};
+
+	uint64_t duration{0};
+
+	for (int i = 0; i < av_format_ctx->nb_streams; ++i) {
+		av_codec_params = av_format_ctx->streams[i]->codecpar;
+		av_codec = const_cast<AVCodec*>(avcodec_find_decoder(av_codec_params->codec_id));
+		if (!av_codec) {
+			continue;
+		}
+		if (av_codec_params->codec_type == AVMEDIA_TYPE_VIDEO) {
+			duration = av_format_ctx->streams[i]->duration;
+			time_base = av_format_ctx->streams[i]->time_base;
+			break;
+		}
+	}
+
+	return duration * (double)time_base.num / (double)time_base.den;
 }
 
 bool video_manager::open_video(video_reader *state, const char* file) {
