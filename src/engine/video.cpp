@@ -3,7 +3,8 @@
 video& video::fill_from_json(const json *j) {
 	utilities::set_string_not_null(j, "id", id);
 	utilities::set_string_not_null(j, "name", name);
-	utilities::set_float_not_null(j, "length", length);
+	utilities::set_uint64_not_null(j, "length", length);
+	utilities::set_string_not_null(j, "path", path);
 
 	return *this;
 }
@@ -14,6 +15,7 @@ json video::to_json() const {
 	j["id"] = id;
 	j["name"] = name;
 	j["length"] = length;
+	j["path"] = path;
 
 	json options_array = json::array();
 

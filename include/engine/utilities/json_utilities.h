@@ -36,4 +36,11 @@ inline void set_float_not_null(const json* j, const char* keyname, float& value)
 	}
 }
 
+inline void set_uint64_not_null(const json* j, const char* keyname, uint64_t& value) {
+	auto key = j->find(keyname);
+	if(key != j->end()) {
+		value = !key->is_null() && !key->is_string() ? key->get<uint64_t>() : 0;
+	}
+}
+
 }

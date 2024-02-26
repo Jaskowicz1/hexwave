@@ -8,11 +8,12 @@ void video_manager::add_video(const video& video_to_add) {
 	videos.emplace(video_to_add.id, video_to_add);
 }
 
-void video_manager::add_video(const std::string_view id, const std::string_view name, const float length) {
+void video_manager::add_video(const std::string_view id, const std::string_view name, const uint64_t length, const std::string_view path) {
 	video vid;
 	vid.id = id;
 	vid.name = name;
 	vid.length = length;
+	vid.path = path;
 	videos.emplace(id, vid);
 }
 
@@ -39,7 +40,7 @@ static void testing() {
 }
 
 
-void video_manager::render_window() {
+void video_manager::render_window(video_reader& reader) {
 	if(ImGui::Begin("Videos")) {
 		if (ImGui::Button("Add Video")) {
 			testing();
@@ -78,6 +79,7 @@ void video_manager::render_window() {
 				auto temp_videos = videos;
 				for (auto& vid_pair : temp_videos) {
 					video& vid = vid_pair.second;
+					ImGui::PushID(vid.id.c_str());
 					std::string title("Video: " + vid.id);
 					if (ImGui::CollapsingHeader(title.c_str())) {
 						// --------------------------------------------------
@@ -123,35 +125,41 @@ void video_manager::render_window() {
 							ImGui::Text("There are no options!");
 						}
 
-						if (ImGui::Button(std::string("Add Option###" + vid.id).c_str())) {
+						if (ImGui::Button(std::string("Add Option##" + vid.id).c_str())) {
 							vid_id_interacting_with = vid.id;
 							ImGui::OpenPopup("add_options_popup");
 						}
 						ImGui::SameLine();
-						if (ImGui::Button(std::string("Remove All###" + vid.id).c_str())) {
+						if (ImGui::Button(std::string("Remove All##" + vid.id).c_str())) {
 							// Do removal of all options here.
 						}
 
 						// --------------------------------------------------
 						ImGui::SeparatorText("Video Management");
 
-						if (ImGui::Button(std::string("Play###" + vid.id).c_str())) {
-							std::cout << vid.name << "\n";
+						if (ImGui::Button(std::string("Play##" + vid.id).c_str())) {
+							if(!open_video(&reader, vid)) {
+								ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to load video."});
+								return;
+							}
+
+							ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Playing video!"});
 						}
 						ImGui::SameLine();
-						if (ImGui::Button(std::string("Move Up###" + vid.id).c_str())) {
+						if (ImGui::Button(std::string("Move Up##" + vid.id).c_str())) {
 						}
 						ImGui::SameLine();
-						if (ImGui::Button(std::string("Move Down###" + vid.id).c_str())) {
+						if (ImGui::Button(std::string("Move Down##" + vid.id).c_str())) {
 						}
 						ImGui::SameLine();
-						if (ImGui::Button(std::string("Remove Video###" + vid.id).c_str())) {
+						if (ImGui::Button(std::string("Remove Video##" + vid.id).c_str())) {
 							remove_video(vid.id);
 						}
 
 						// --------------------------------------------------
 						ImGui::SeparatorText("End");
 					}
+					ImGui::PopID();
 				}
 			} else {
 				ImGui::Text("There are no videos!");
@@ -174,7 +182,7 @@ void video_manager::render_window() {
 				if(strlen(id) != 0 && strlen(name) != 0 && strlen(path) != 0) {
 					uint64_t len = get_video_length(path);
 					if(len != 0) {
-						add_video(id, name, len);
+						add_video(id, name, len, path);
 						ImGui::CloseCurrentPopup();
 					} else {
 						ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Invalid path! Check the path of the video and make sure it's the right file type!"});
@@ -235,7 +243,10 @@ uint64_t video_manager::get_video_length(const char *file) {
 	return duration * (double)time_base.num / (double)time_base.den;
 }
 
-bool video_manager::open_video(video_reader *state, const char* file) {
+bool video_manager::open_video(video_reader *state, const video& vid) {
+
+	const char* file = vid.path.c_str();
+
 	state->av_format_ctx = avformat_alloc_context();
 	if(!state->av_format_ctx) {
 		std::cout << "Failed to create an AVFormatContext." << "\n";
@@ -294,6 +305,22 @@ bool video_manager::open_video(video_reader *state, const char* file) {
 	if (!state->av_packet) {
 		printf("Couldn't allocate AVPacket\n");
 		return false;
+	}
+
+	current_video = vid;
+
+	bool found = false;
+
+	for(const auto& temp_vid : videos) {
+		if(temp_vid.second.id == current_video.id) {
+			found = true;
+			continue;
+		}
+
+		if(found) {
+			next_video = temp_vid.second;
+			break;
+		}
 	}
 
 	return true;

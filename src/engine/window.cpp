@@ -109,12 +109,15 @@ window::~window() {
 }
 
 void window::window_loop() {
+	video_reader vid_reader;
 	// /home/archie/Documents/interactive-film-engine/testing/SCENE1.mp4
 	// /home/archie/Downloads/tf2teleporter.mp4
 	//if(!manager.open_video(&vid_reader, "/home/archie/Downloads/SCENE1.mp4")) {
 	//	std::cout << "Failed to load video." << "\n";
 	//	return;
 	//}
+
+	uint8_t* frame_data;
 
 	while (!glfwWindowShouldClose(glfw_window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -127,7 +130,18 @@ void window::window_loop() {
 		glOrtho(0, window_width, window_height, 0, -1, 1);
 		glMatrixMode(GL_MODELVIEW);
 
+		static bool first_frame = true;
+
 		if(!manager.current_video.name.empty()) {
+
+			if(first_frame) {
+				std::cout << "First frame!" << "\n";
+				frame_width = vid_reader.width;
+				frame_height = vid_reader.height;
+
+				frame_data = new uint8_t[frame_width * frame_height * 4];
+			}
+
 			int64_t pts;
 
 			if(!manager.read_video_frame(glfw_window, &vid_reader, frame_data, &pts)) {
@@ -135,7 +149,28 @@ void window::window_loop() {
 				break;
 			}
 
+
 			double pt_in_seconds = pts * (double)vid_reader.time_base.num / (double)vid_reader.time_base.den;
+
+			uint64_t pt_rounded = pt_in_seconds;
+
+			if(pts == 0) {
+				glfwSetTime(0.0);
+				first_frame = false;
+			} else if(pt_rounded == manager.current_video.length) {
+				std::cout << "End reached, doing next video..." << "\n";
+				first_frame = true;
+				delete[] frame_data;
+				frame_data = nullptr;
+
+				manager.current_video.name = "";
+
+				if(!manager.open_video(&vid_reader, manager.next_video)) {
+					std::cout << "Failed to read frame data." << "\n";
+					break;
+				}
+			}
+
 			while (pt_in_seconds > glfwGetTime()) {
 				glfwWaitEventsTimeout(pt_in_seconds - glfwGetTime());
 			}
@@ -168,7 +203,7 @@ void window::window_loop() {
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::ShowDemoWindow();
+		//ImGui::ShowDemoWindow();
 
 		if (ImGui::BeginMainMenuBar()) {
 			if (ImGui::BeginMenu("File")) {
@@ -233,7 +268,7 @@ void window::window_loop() {
 			ImGui::EndMainMenuBar();
 		}
 
-		manager.render_window();
+		manager.render_window(vid_reader);
 
 		/**
 		 * Notifications Rendering Start
@@ -265,6 +300,8 @@ void window::window_loop() {
 		glfwSwapBuffers(glfw_window);
 		glfwPollEvents();
 	}
+
+	delete[] frame_data;
 }
 
 void window::close_window() {

@@ -23,7 +23,7 @@ struct video_reader {
 	int video_stream_index{-1};
 	AVFrame* av_frame{nullptr};
 	AVPacket* av_packet{nullptr};
-	SwsContext* sws_scaler_ctx{nullptr};
+	SwsContext* sws_scaler_ctx;
 };
 
 class video_manager {
@@ -31,7 +31,7 @@ class video_manager {
 public:
 	video_manager() = default;
 
-	bool open_video(video_reader* state, const char* file);
+	bool open_video(video_reader* state, const video& vid);
 
 	uint64_t get_video_length(const char* file);
 
@@ -39,7 +39,7 @@ public:
 
 	void add_video(const video& video_to_add);
 
-	void add_video(const std::string_view id, const std::string_view name, const float length);
+	void add_video(const std::string_view id, const std::string_view name, const uint64_t length, const std::string_view path);
 
 	void remove_video(const std::string_view id);
 
@@ -49,7 +49,7 @@ public:
 
 	void remove_all_videos();
 
-	void render_window();
+	void render_window(video_reader& reader);
 
 	std::map<std::string, video>& get_videos();
 

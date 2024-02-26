@@ -16,25 +16,18 @@ public:
 
 	void close_window();
 
+	video_manager manager{};
+
 private:
 
 	struct GLFWwindow* glfw_window{nullptr};
 
-	video_manager manager{};
-	video_reader vid_reader;
-
 	uint16_t frame_width{0}; // vid_reader.height
 	uint16_t frame_height{0}; // vid_reader.height
-	uint8_t* frame_data{nullptr}; // = new uint8_t[frame_width * frame_height * 4];
 
 	bool testing_export{false};
 
 	GLuint video_texture;
-
-	GLuint vbo;
-	GLuint vao;
-	GLuint ibo;
-	GLuint shader_program;
 
 	glm::vec2 vertices[4] = {{-1, -1}, {-1, 1}, {1, 1}, {1, -1}};
 
