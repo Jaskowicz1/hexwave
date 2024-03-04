@@ -14,8 +14,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB src_code CONFIGURE_DEPENDS "src/engine/*.cpp" "include/engine/*.h" "src/engine/*/*.cpp" "include/engine/*/*.h")
 file(GLOB ext_code CONFIGURE_DEPENDS "libs/imgui/*.cpp")
+file(GLOB FFmpeg_libs CONFIGURE_DEPENDS "libs/FFmpeg/lib/*.so")
 
-add_subdirectory(libs/ffmpeg)
 add_subdirectory(libs/glad)
 
 include_directories(
@@ -26,6 +26,7 @@ include_directories(
         include/
         include/engine/
         include/ImGuiNotify/
+        libs/FFmpeg/include/
 )
 
 add_definitions("-DGLFW_INCLUDE_NONE")
@@ -38,6 +39,6 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
         glad
         glfw
-        ffmpeg
         ${GLFW_LIBRARIES}
+        ${FFmpeg_libs}
 )
