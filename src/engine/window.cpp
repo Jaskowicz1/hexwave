@@ -70,7 +70,6 @@ window::window() {
 	std::ifstream fontAwesomeFile(FONT_ICON_FILE_NAME_FAS);
 
 	if (!fontAwesomeFile.good()) {
-		// If it's not good, then we can't find the font and should abort
 		std::cerr << "Could not find the FontAwesome font file." << std::endl;
 		abort();
 	}
@@ -110,12 +109,6 @@ window::~window() {
 
 void window::window_loop() {
 	video_reader vid_reader;
-	// /home/archie/Documents/interactive-film-engine/testing/SCENE1.mp4
-	// /home/archie/Downloads/tf2teleporter.mp4
-	//if(!manager.open_video(&vid_reader, "/home/archie/Downloads/SCENE1.mp4")) {
-	//	std::cout << "Failed to load video." << "\n";
-	//	return;
-	//}
 
 	uint8_t* frame_data;
 
@@ -135,11 +128,16 @@ void window::window_loop() {
 		if(!manager.current_video.name.empty()) {
 
 			if(first_frame) {
-				std::cout << "First frame!" << "\n";
 				frame_width = vid_reader.width;
 				frame_height = vid_reader.height;
 
+				std::cout << "First frame! frame_width:" << std::to_string(frame_width) << " & frame_height: " << std::to_string(frame_height) << "\n";
+
 				frame_data = new uint8_t[frame_width * frame_height * 4];
+
+				std::cout << std::to_string(*frame_data) << "\n";
+
+				first_frame = false;
 			}
 
 			int64_t pts;
@@ -156,7 +154,9 @@ void window::window_loop() {
 
 			if(pts == 0) {
 				glfwSetTime(0.0);
-				first_frame = false;
+				delete[] frame_data;
+				frame_data = nullptr;
+				first_frame = true;
 			} else if(pt_rounded == manager.current_video.length) {
 				std::cout << "End reached, doing next video..." << "\n";
 				first_frame = true;

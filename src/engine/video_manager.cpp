@@ -244,6 +244,8 @@ uint64_t video_manager::get_video_length(const char *file) {
 }
 
 bool video_manager::open_video(video_reader *state, const video& vid) {
+	sws_freeContext(state->sws_scaler_ctx);
+	state->sws_scaler_ctx = nullptr;
 
 	const char* file = vid.path.c_str();
 
@@ -359,6 +361,7 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 
 	// Set up sws scaler
 	if (!state->sws_scaler_ctx) {
+		std::cout << "scaler setup!" << "\n";
 		int window_width;
 		int window_height;
 		glfwGetWindowSize(window, &window_width, &window_height);
