@@ -12,18 +12,30 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
+#include <libavutil/avutil.h>
+#include <libavutil/audio_fifo.h>
 }
 
 struct video_reader {
 	int width{0};
 	int height{0};
+
+	int video_stream_index{-1};
+	int audio_stream_index{-1};
+
 	AVRational time_base;
 	AVFormatContext* av_format_ctx{nullptr};
-	AVCodecContext* av_codec_ctx{nullptr};
-	int video_stream_index{-1};
+
+	AVCodecContext* av_codec_ctx_video{nullptr};
+	AVCodecContext* av_codec_ctx_audio{nullptr};
+
 	AVFrame* av_frame{nullptr};
 	AVPacket* av_packet{nullptr};
-	SwsContext* sws_scaler_ctx;
+	SwsContext* sws_scaler_ctx{nullptr};
+	SwrContext* swr_resampler_ctx{nullptr};
+
+	AVAudioFifo* av_audio_fifo{nullptr};
 };
 
 class video_manager {

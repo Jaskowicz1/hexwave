@@ -4,6 +4,16 @@
 #include "imgui_internal.h"
 #include "ImGuiNotify.hpp"
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio/miniaudio.h"
+
+void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
+	AVAudioFifo* fifo = reinterpret_cast<AVAudioFifo*>(pDevice->pUserData);
+	av_audio_fifo_read(fifo, &pOutput, frameCount);
+
+	(void)pInput;
+}
+
 void video_manager::add_video(const video& video_to_add) {
 	videos.emplace(video_to_add.id, video_to_add);
 }
@@ -245,7 +255,10 @@ uint64_t video_manager::get_video_length(const char *file) {
 
 bool video_manager::open_video(video_reader *state, const video& vid) {
 	sws_freeContext(state->sws_scaler_ctx);
+	swr_free(&state->swr_resampler_ctx);
+
 	state->sws_scaler_ctx = nullptr;
+	state->swr_resampler_ctx = nullptr;
 
 	const char* file = vid.path.c_str();
 
@@ -260,20 +273,27 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 		return false;
 	}
 
-	AVCodecParameters* av_codec_params;
-	AVCodec* av_codec;
+	AVCodecParameters* av_codec_video_params{nullptr};
+	AVCodecParameters* av_codec_audio_params{nullptr};
+
+	AVCodec* av_codec_video{nullptr};
+	AVCodec* av_codec_audio{nullptr};
+
 	for (int i = 0; i < state->av_format_ctx->nb_streams; ++i) {
-		av_codec_params = state->av_format_ctx->streams[i]->codecpar;
-		av_codec = const_cast<AVCodec*>(avcodec_find_decoder(av_codec_params->codec_id));
-		if (!av_codec) {
-			continue;
-		}
-		if (av_codec_params->codec_type == AVMEDIA_TYPE_VIDEO) {
+
+		if (state->av_format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+			av_codec_video_params = state->av_format_ctx->streams[i]->codecpar;
+			av_codec_video = const_cast<AVCodec*>(avcodec_find_decoder(av_codec_video_params->codec_id));
+
 			state->video_stream_index = i;
-			state->width = av_codec_params->width;
-			state->height = av_codec_params->height;
+			state->width = av_codec_video_params->width;
+			state->height = av_codec_video_params->height;
 			state->time_base = state->av_format_ctx->streams[i]->time_base;
-			break;
+		} else if (state->av_format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+			av_codec_audio_params = state->av_format_ctx->streams[i]->codecpar;
+			av_codec_audio = const_cast<AVCodec*>(avcodec_find_decoder(av_codec_audio_params->codec_id));
+
+			state->audio_stream_index = i;
 		}
 	}
 
@@ -283,17 +303,31 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 	}
 
 	// Set up a codec context for the decoder
-	state->av_codec_ctx = avcodec_alloc_context3(av_codec);
-	if (!state->av_codec_ctx) {
-		printf("Couldn't create AVCodecContext\n");
+	state->av_codec_ctx_video = avcodec_alloc_context3(av_codec_video);
+	if (!state->av_codec_ctx_video) {
+		printf("Couldn't create AVCodecContext for video.\n");
 		return false;
 	}
-	if (avcodec_parameters_to_context(state->av_codec_ctx, av_codec_params) < 0) {
-		printf("Couldn't initialize AVCodecContext\n");
+	if (avcodec_parameters_to_context(state->av_codec_ctx_video, av_codec_video_params) < 0) {
+		printf("Couldn't initialize AVCodecContext for video.\n");
 		return false;
 	}
-	if (avcodec_open2(state->av_codec_ctx, av_codec, NULL) < 0) {
-		printf("Couldn't open codec\n");
+	if (avcodec_open2(state->av_codec_ctx_video, av_codec_video, NULL) < 0) {
+		printf("Couldn't open video codec\n");
+		return false;
+	}
+
+	state->av_codec_ctx_audio = avcodec_alloc_context3(av_codec_audio);
+	if (!state->av_codec_ctx_audio) {
+		printf("Couldn't create AVCodecContext for audio.\n");
+		return false;
+	}
+	if (avcodec_parameters_to_context(state->av_codec_ctx_audio, av_codec_audio_params) < 0) {
+		printf("Couldn't initialize AVCodecContext for audio.\n");
+		return false;
+	}
+	if (avcodec_open2(state->av_codec_ctx_audio, av_codec_audio, NULL) < 0) {
+		printf("Couldn't open audio codec\n");
 		return false;
 	}
 
@@ -308,6 +342,16 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 		printf("Couldn't allocate AVPacket\n");
 		return false;
 	}
+
+	std::cout << "sample rate: " << av_codec_audio_params->sample_rate << "\n";
+
+
+	swr_alloc_set_opts2(&state->swr_resampler_ctx,
+			    &av_codec_audio_params->ch_layout, AV_SAMPLE_FMT_FLT, av_codec_audio_params->sample_rate,
+			    &av_codec_audio_params->ch_layout, (AVSampleFormat)av_codec_audio_params->format, av_codec_audio_params->sample_rate,
+			    0, nullptr);
+
+	state->av_audio_fifo = av_audio_fifo_alloc(AV_SAMPLE_FMT_FLT, av_codec_audio_params->channels, 1);
 
 	current_video = vid;
 
@@ -332,18 +376,38 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 	int response{-1};
 
 	while(av_read_frame(state->av_format_ctx, state->av_packet) >= 0) {
-		if(state->av_packet->stream_index != state->video_stream_index) {
+		if(state->av_packet->stream_index != state->video_stream_index && state->av_packet->stream_index != state->audio_stream_index) {
+			std::cout << "unref..." << "\n";
 			av_packet_unref(state->av_packet);
 			continue;
 		}
 
-		response = avcodec_send_packet(state->av_codec_ctx, state->av_packet);
+		if(state->av_packet->stream_index == state->audio_stream_index) {
+			while((response = avcodec_receive_frame(state->av_codec_ctx_audio, state->av_frame)) == 0) {
+				AVFrame* temp_frame = av_frame_alloc();
+				temp_frame->sample_rate = state->av_frame->sample_rate;
+				temp_frame->channel_layout = state->av_frame->channel_layout;
+				temp_frame->channels = state->av_frame->channels;
+				temp_frame->format = AV_SAMPLE_FMT_FLT;
+
+				std::cout << "temp frame sample rate: " << temp_frame->sample_rate << "\n";
+
+				response = swr_convert_frame(state->swr_resampler_ctx, temp_frame, state->av_frame);
+				av_frame_unref(state->av_frame);
+				av_audio_fifo_write(state->av_audio_fifo, (void**)temp_frame->data, temp_frame->nb_samples);
+				av_frame_free(&temp_frame);
+			}
+
+			continue;
+		}
+
+		response = avcodec_send_packet(state->av_codec_ctx_video, state->av_packet);
 		if(response < 0) {
 			std::cout << "Failed to decode packet: ";
 			return false;
 		}
 
-		response = avcodec_receive_frame(state->av_codec_ctx, state->av_frame);
+		response = avcodec_receive_frame(state->av_codec_ctx_video, state->av_frame);
 
 		if(response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
 			av_packet_unref(state->av_packet);
@@ -357,15 +421,36 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 		break;
 	}
 
+
+	ma_device_config device_config;
+	ma_device device;
+
+	device_config = ma_device_config_init(ma_device_type_playback);
+	device_config.playback.format   = ma_format_f32;
+	device_config.playback.channels = state->av_codec_ctx_audio->channels;
+	device_config.sampleRate        = state->av_codec_ctx_audio->sample_rate;
+	device_config.dataCallback      = data_callback;
+	device_config.pUserData         = state->av_audio_fifo;
+
+	if (ma_device_init(NULL, &device_config, &device) != MA_SUCCESS) {
+		printf("Failed to open playback device.\n");
+		return -3;
+	}
+
+	if (ma_device_start(&device) != MA_SUCCESS) {
+		printf("Failed to start playback device.\n");
+		ma_device_uninit(&device);
+		return -4;
+	}
+
 	*pts = state->av_frame->pts;
 
 	// Set up sws scaler
 	if (!state->sws_scaler_ctx) {
-		std::cout << "scaler setup!" << "\n";
 		int window_width;
 		int window_height;
 		glfwGetWindowSize(window, &window_width, &window_height);
-		state->sws_scaler_ctx = sws_getContext(state->width, state->height, state->av_codec_ctx->pix_fmt,
+		state->sws_scaler_ctx = sws_getContext(state->width, state->height, state->av_codec_ctx_video->pix_fmt,
 						       window_width, window_height, AV_PIX_FMT_RGB0,
 						       SWS_BICUBIC, NULL, NULL, NULL);
 	}

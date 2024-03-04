@@ -131,11 +131,7 @@ void window::window_loop() {
 				frame_width = vid_reader.width;
 				frame_height = vid_reader.height;
 
-				std::cout << "First frame! frame_width:" << std::to_string(frame_width) << " & frame_height: " << std::to_string(frame_height) << "\n";
-
 				frame_data = new uint8_t[frame_width * frame_height * 4];
-
-				std::cout << std::to_string(*frame_data) << "\n";
 
 				first_frame = false;
 			}
