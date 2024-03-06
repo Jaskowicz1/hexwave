@@ -36,6 +36,8 @@ struct video_reader {
 	SwrContext* swr_resampler_ctx{nullptr};
 
 	AVAudioFifo* av_audio_fifo{nullptr};
+	AVPacket* av_audio_packet{nullptr};
+	AVFrame* av_audio_frame{nullptr};
 };
 
 class video_manager {

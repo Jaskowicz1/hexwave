@@ -11,6 +11,17 @@
 #include "ImGuiNotify.hpp"
 #include "IconsFontAwesome6.h"
 
+//#define MA_DEBUG_OUTPUT
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio/miniaudio.h"
+
+void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
+	AVAudioFifo* fifo = reinterpret_cast<AVAudioFifo*>(pDevice->pUserData);
+	av_audio_fifo_read(fifo, &pOutput, frameCount);
+
+	(void)pInput;
+}
+
 window::window() {
 	glfwSetErrorCallback([](int error, const char* description) {
 		fprintf(stderr, "GLFW Error %d: %s\n", error, description);
@@ -112,6 +123,11 @@ void window::window_loop() {
 
 	uint8_t* frame_data;
 
+	ma_device_config device_config{};
+	ma_device device{};
+
+	bool started_audio = false;
+
 	while (!glfwWindowShouldClose(glfw_window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -150,9 +166,36 @@ void window::window_loop() {
 
 			if(pts == 0) {
 				glfwSetTime(0.0);
-				delete[] frame_data;
-				frame_data = nullptr;
+				// somehow, this can happen twice. uh oh
+				if(frame_data) {
+					delete[] frame_data;
+					frame_data = nullptr;
+				}
 				first_frame = true;
+
+				if(device_config.pUserData) {
+					ma_device_stop(&device);
+					device_config = {};
+				}
+
+				device_config = ma_device_config_init(ma_device_type_playback);
+				device_config.playback.format   = ma_format_f32;
+				device_config.playback.channels = vid_reader.av_codec_ctx_audio->channels;
+				device_config.sampleRate        = vid_reader.av_codec_ctx_audio->sample_rate;
+				device_config.dataCallback      = data_callback;
+				device_config.pUserData         = vid_reader.av_audio_fifo;
+
+				if (ma_device_init(NULL, &device_config, &device) != MA_SUCCESS) {
+					printf("Failed to open playback device.\n");
+					return;
+				}
+
+				if (ma_device_start(&device) != MA_SUCCESS) {
+					printf("Failed to start playback device.\n");
+					ma_device_uninit(&device);
+					return;
+				}
+
 			} else if(pt_rounded == manager.current_video.length) {
 				std::cout << "End reached, doing next video..." << "\n";
 				first_frame = true;
@@ -172,15 +215,9 @@ void window::window_loop() {
 			}
 		}
 
-		/*
-		 * Need to add a 2D texture here that covers the whole window.
-		 * We will then render the video to that texture.
-		 */
-
 		glBindTexture(GL_TEXTURE_2D, video_texture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_data);
 
-		// Render whatever you want
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, video_texture);
 		glBegin(GL_QUADS);

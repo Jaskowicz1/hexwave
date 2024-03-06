@@ -4,16 +4,6 @@
 #include "imgui_internal.h"
 #include "ImGuiNotify.hpp"
 
-#define MINIAUDIO_IMPLEMENTATION
-#include "miniaudio/miniaudio.h"
-
-void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
-	AVAudioFifo* fifo = reinterpret_cast<AVAudioFifo*>(pDevice->pUserData);
-	av_audio_fifo_read(fifo, &pOutput, frameCount);
-
-	(void)pInput;
-}
-
 void video_manager::add_video(const video& video_to_add) {
 	videos.emplace(video_to_add.id, video_to_add);
 }
@@ -337,6 +327,12 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 		return false;
 	}
 
+	state->av_audio_frame = av_frame_alloc();
+	if (!state->av_audio_frame) {
+		printf("Couldn't allocate audio AVFrame\n");
+		return false;
+	}
+
 	state->av_packet = av_packet_alloc();
 	if (!state->av_packet) {
 		printf("Couldn't allocate AVPacket\n");
@@ -383,20 +379,29 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 		}
 
 		if(state->av_packet->stream_index == state->audio_stream_index) {
-			while((response = avcodec_receive_frame(state->av_codec_ctx_audio, state->av_frame)) == 0) {
-				AVFrame* temp_frame = av_frame_alloc();
-				temp_frame->sample_rate = state->av_frame->sample_rate;
-				temp_frame->channel_layout = state->av_frame->channel_layout;
-				temp_frame->channels = state->av_frame->channels;
-				temp_frame->format = AV_SAMPLE_FMT_FLT;
-
-				std::cout << "temp frame sample rate: " << temp_frame->sample_rate << "\n";
-
-				response = swr_convert_frame(state->swr_resampler_ctx, temp_frame, state->av_frame);
-				av_frame_unref(state->av_frame);
-				av_audio_fifo_write(state->av_audio_fifo, (void**)temp_frame->data, temp_frame->nb_samples);
-				av_frame_free(&temp_frame);
+			response = avcodec_send_packet(state->av_codec_ctx_audio, state->av_packet);
+			if(response < 0) {
+				std::cout << "Failed to decode packet: ";
+				return false;
 			}
+
+			response = avcodec_receive_frame(state->av_codec_ctx_audio, state->av_audio_frame);
+
+			if(response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
+				std::cout << "bad response..." << "\n";
+				continue;
+			}
+
+			AVFrame* temp_frame = av_frame_alloc();
+			temp_frame->sample_rate = state->av_audio_frame->sample_rate;
+			temp_frame->channel_layout = state->av_audio_frame->channel_layout;
+			temp_frame->channels = state->av_audio_frame->channels;
+			temp_frame->format = AV_SAMPLE_FMT_FLT;
+
+			response = swr_convert_frame(state->swr_resampler_ctx, temp_frame, state->av_audio_frame);
+			//av_frame_unref(state->av_audio_frame);
+			av_audio_fifo_write(state->av_audio_fifo, (void**)temp_frame->data, temp_frame->nb_samples);
+			av_frame_free(&temp_frame);
 
 			continue;
 		}
@@ -419,28 +424,6 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 
 		av_packet_unref(state->av_packet);
 		break;
-	}
-
-
-	ma_device_config device_config;
-	ma_device device;
-
-	device_config = ma_device_config_init(ma_device_type_playback);
-	device_config.playback.format   = ma_format_f32;
-	device_config.playback.channels = state->av_codec_ctx_audio->channels;
-	device_config.sampleRate        = state->av_codec_ctx_audio->sample_rate;
-	device_config.dataCallback      = data_callback;
-	device_config.pUserData         = state->av_audio_fifo;
-
-	if (ma_device_init(NULL, &device_config, &device) != MA_SUCCESS) {
-		printf("Failed to open playback device.\n");
-		return -3;
-	}
-
-	if (ma_device_start(&device) != MA_SUCCESS) {
-		printf("Failed to start playback device.\n");
-		ma_device_uninit(&device);
-		return -4;
 	}
 
 	*pts = state->av_frame->pts;
