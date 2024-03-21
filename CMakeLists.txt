@@ -25,6 +25,7 @@ include_directories(
         libs/imgui/
         include/
         include/engine/
+        include/stb/
         include/ImGuiNotify/
         libs/FFmpeg/include/
 )
@@ -35,6 +36,7 @@ add_executable(${PROJECT_NAME}
         ${src_code}
         ${ext_code}
         include/miniaudio/miniaudio.h
+        include/stb/stb_image.h
 )
 
 target_link_libraries(${PROJECT_NAME}

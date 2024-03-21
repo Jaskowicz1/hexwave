@@ -11,6 +11,9 @@
 #include "ImGuiNotify.hpp"
 #include "IconsFontAwesome6.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 //#define MA_DEBUG_OUTPUT
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio/miniaudio.h"
@@ -44,6 +47,11 @@ window::window() {
 
 	if (!gladLoaderLoadGL())
 		throw std::runtime_error("Error initializing glad");
+
+	GLFWimage images[1];
+	images[0].pixels = stbi_load("HexwaveIcon.png", &images[0].width, &images[0].height, 0, 4); //rgba channels
+	glfwSetWindowIcon(glfw_window, 1, images);
+	stbi_image_free(images[0].pixels);
 
 	glGenTextures(1, &video_texture);
 	glBindTexture(GL_TEXTURE_2D, video_texture);
@@ -129,6 +137,9 @@ void window::window_loop() {
 	bool started_audio = false;
 
 	while (!glfwWindowShouldClose(glfw_window)) {
+
+		//const auto& render_start = std::chrono::high_resolution_clock::now();
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Set up orphographic projection
@@ -140,6 +151,8 @@ void window::window_loop() {
 		glMatrixMode(GL_MODELVIEW);
 
 		static bool first_frame = true;
+
+		static bool show_choices;
 
 		if(!manager.current_video.name.empty()) {
 
@@ -158,7 +171,6 @@ void window::window_loop() {
 				std::cout << "Failed to read frame data." << "\n";
 				break;
 			}
-
 
 			double pt_in_seconds = pts * (double)vid_reader.time_base.num / (double)vid_reader.time_base.den;
 
@@ -196,6 +208,10 @@ void window::window_loop() {
 					return;
 				}
 
+				if(manager.current_video.always_show_options) {
+					show_choices = true;
+				}
+
 			} else if(pt_rounded == manager.current_video.length) {
 				std::cout << "End reached, doing next video..." << "\n";
 				first_frame = true;
@@ -227,6 +243,12 @@ void window::window_loop() {
 		glTexCoord2d(0,1); glVertex2i(0, frame_height);
 		glEnd();
 		glDisable(GL_TEXTURE_2D);
+
+		//const auto& render_finish = std::chrono::high_resolution_clock::now();
+
+		//const auto render_result = std::chrono::duration_cast<std::chrono::milliseconds>(render_finish - render_start);
+
+		//std::cout << "Rendering render time: " << render_result.count() << "ms\n";
 
 		/*
 		 * Video renderer finished.
@@ -299,6 +321,38 @@ void window::window_loop() {
 			}
 
 			ImGui::EndMainMenuBar();
+		}
+
+		if(!manager.current_video.options.empty() && !first_frame) {
+			ImGui::Begin("Options Select", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
+			for(const auto& opt : manager.current_video.options) {
+
+				// Pre-cautions
+				if(opt.second.id.empty() || opt.second.name.empty()) {
+					continue;
+				}
+
+				std::string option_text(opt.second.name);
+				if(ImGui::Button(option_text.c_str())) {
+					first_frame = true;
+					delete[] frame_data;
+					frame_data = nullptr;
+
+					manager.current_video.name = "";
+
+					std::cout << "attempting to play: " << opt.second.video_id << "\n";
+					video vid = manager.get_videos().at(opt.second.video_id);
+					std::cout << "video name: " << vid.name << "\n";
+					if(!manager.open_video(&vid_reader, vid)) {
+						std::cout << "Failed to read frame data." << "\n";
+						break;
+					}
+
+					break;
+				}
+				ImGui::SameLine();
+			}
+			ImGui::End();
 		}
 
 		manager.render_window(vid_reader);

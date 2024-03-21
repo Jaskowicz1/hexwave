@@ -5,6 +5,10 @@ video& video::fill_from_json(const json *j) {
 	utilities::set_string_not_null(j, "name", name);
 	utilities::set_uint64_not_null(j, "length", length);
 	utilities::set_string_not_null(j, "path", path);
+	utilities::set_string_not_null(j, "linked_video", next_video_id);
+	utilities::set_bool_not_null(j, "always_show_options", always_show_options);
+	utilities::set_uint64_not_null(j, "options_show_start_time", options_show_at);
+	utilities::set_uint64_not_null(j, "options_show_end_time", options_hide_at);
 
 	return *this;
 }
@@ -16,6 +20,11 @@ json video::to_json() const {
 	j["name"] = name;
 	j["length"] = length;
 	j["path"] = path;
+	j["linked_video"] = next_video_id;
+	j["loop"] = next_video_id;
+	j["always_show_options"] = always_show_options;
+	j["options_show_start_time"] = options_show_at;
+	j["options_show_end_time"] = options_hide_at;
 
 	json options_array = json::array();
 

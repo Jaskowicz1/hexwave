@@ -11,8 +11,14 @@ struct option {
 struct video {
 	std::string id{};
 	std::string name{};
-	uint64_t length;
+	uint64_t length{0};
 	std::string path{};
+	std::string next_video_id{};
+	bool loop{false};
+
+	bool always_show_options{false};
+	uint64_t options_show_at{0};
+	uint64_t options_hide_at{0}; // if left at 0 (or less than show_at), this will be ignored.
 
 	std::map<std::string, option> options{};
 

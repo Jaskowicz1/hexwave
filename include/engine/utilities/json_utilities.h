@@ -43,4 +43,11 @@ inline void set_uint64_not_null(const json* j, const char* keyname, uint64_t& va
 	}
 }
 
+inline void set_bool_not_null(const json* j, const char* keyname, bool& value) {
+	auto key = j->find(keyname);
+	if(key != j->end()) {
+		value = !key->is_null() && !key->is_string() && key->get<bool>();
+	}
+}
+
 }

@@ -53,28 +53,6 @@ void video_manager::render_window(video_reader& reader) {
 		static std::string vid_id_interacting_with;
 
 		if(ImGui::BeginChild("Scrolling")) {
-
-			if (ImGui::BeginPopup("add_options_popup")) {
-				static char id[64];
-				ImGui::InputText("ID", id, IM_ARRAYSIZE(id));
-
-				static char name[64];
-				ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
-
-				static char video_id[64];
-				ImGui::InputText("Option linked to video ID", video_id, IM_ARRAYSIZE(video_id));
-
-				if (ImGui::Button("Add")) {
-					if(strlen(id) != 0 && strlen(name) != 0 && strlen(video_id) != 0) {
-						add_option(videos[vid_id_interacting_with], id, name, video_id);
-						ImGui::CloseCurrentPopup();
-						vid_id_interacting_with = "";
-					}
-				}
-
-				ImGui::EndPopup();
-			}
-
 			if(!videos.empty()) {
 				auto temp_videos = videos;
 				for (auto& vid_pair : temp_videos) {
@@ -132,6 +110,27 @@ void video_manager::render_window(video_reader& reader) {
 						ImGui::SameLine();
 						if (ImGui::Button(std::string("Remove All##" + vid.id).c_str())) {
 							// Do removal of all options here.
+						}
+
+						if (ImGui::BeginPopup("add_options_popup")) {
+							static char id[64];
+							ImGui::InputText("ID", id, IM_ARRAYSIZE(id));
+
+							static char name[64];
+							ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
+
+							static char video_id[64];
+							ImGui::InputText("Option linked to video ID", video_id, IM_ARRAYSIZE(video_id));
+
+							if (ImGui::Button("Add")) {
+								if(strlen(id) != 0 && strlen(name) != 0 && strlen(video_id) != 0) {
+									add_option(videos[vid_id_interacting_with], id, name, video_id);
+									ImGui::CloseCurrentPopup();
+									vid_id_interacting_with = "";
+								}
+							}
+
+							ImGui::EndPopup();
 						}
 
 						// --------------------------------------------------
@@ -302,6 +301,16 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 		printf("Couldn't initialize AVCodecContext for video.\n");
 		return false;
 	}
+
+	state->av_codec_ctx_video->thread_count = 0;
+
+	if (av_codec_video->capabilities & AV_CODEC_CAP_FRAME_THREADS)
+		state->av_codec_ctx_video->thread_type = FF_THREAD_FRAME;
+	else if (av_codec_video->capabilities & AV_CODEC_CAP_SLICE_THREADS)
+		state->av_codec_ctx_video->thread_type = FF_THREAD_SLICE;
+	else
+		state->av_codec_ctx_video->thread_count = 1;
+
 	if (avcodec_open2(state->av_codec_ctx_video, av_codec_video, NULL) < 0) {
 		printf("Couldn't open video codec\n");
 		return false;
@@ -316,6 +325,16 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 		printf("Couldn't initialize AVCodecContext for audio.\n");
 		return false;
 	}
+
+	state->av_codec_ctx_audio->thread_count = 0;
+
+	if (av_codec_audio->capabilities & AV_CODEC_CAP_FRAME_THREADS)
+		state->av_codec_ctx_audio->thread_type = FF_THREAD_FRAME;
+	else if (av_codec_audio->capabilities & AV_CODEC_CAP_SLICE_THREADS)
+		state->av_codec_ctx_audio->thread_type = FF_THREAD_SLICE;
+	else
+		state->av_codec_ctx_audio->thread_count = 1;
+
 	if (avcodec_open2(state->av_codec_ctx_audio, av_codec_audio, NULL) < 0) {
 		printf("Couldn't open audio codec\n");
 		return false;
