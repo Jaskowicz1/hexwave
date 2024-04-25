@@ -17,8 +17,8 @@
  * #define FONT_ICON_FILE_NAME_FAS "../fonts/fa-solid-900.ttf"
 */
 
-#define FONT_ICON_FILE_NAME_FAR "fa-regular-400.ttf"
-#define FONT_ICON_FILE_NAME_FAS "fa-solid-900.ttf"
+#define FONT_ICON_FILE_NAME_FAR "extras/fa-regular-400.ttf"
+#define FONT_ICON_FILE_NAME_FAS "extras/fa-solid-900.ttf"
 
 
 

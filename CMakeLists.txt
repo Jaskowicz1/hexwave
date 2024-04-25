@@ -7,6 +7,7 @@ project("Hexwave" VERSION 0.2 DESCRIPTION "An engine designed to make Interactiv
 option(GLFW_BUILD_DOCS OFF)
 option(GLFW_BUILD_EXAMPLES OFF)
 option(GLFW_BUILD_TESTS OFF)
+option(GLFW_BUILD_WAYLAND OFF)
 add_subdirectory(libs/glfw)
 
 # We're following the C++17 standard here.
@@ -14,9 +15,9 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB src_code CONFIGURE_DEPENDS "src/engine/*.cpp" "include/engine/*.h" "src/engine/*/*.cpp" "include/engine/*/*.h")
 file(GLOB ext_code CONFIGURE_DEPENDS "libs/imgui/*.cpp")
-file(GLOB FFmpeg_libs CONFIGURE_DEPENDS "libs/FFmpeg/lib/*.so")
 
 add_subdirectory(libs/glad)
+add_subdirectory(libs/FFmpeg)
 
 include_directories(
         libs/glad/
@@ -27,7 +28,6 @@ include_directories(
         include/engine/
         include/stb/
         include/ImGuiNotify/
-        libs/FFmpeg/include/
 )
 
 add_definitions("-DGLFW_INCLUDE_NONE")
@@ -42,6 +42,8 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
         glad
         glfw
+        FFmpeg
         ${GLFW_LIBRARIES}
-        ${FFmpeg_libs}
 )
+
+file(COPY extras DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
