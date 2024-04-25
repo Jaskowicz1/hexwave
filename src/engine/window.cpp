@@ -35,7 +35,7 @@ window::window() {
 		exit(EXIT_FAILURE);
 	}
 
-	glfw_window = glfwCreateWindow(1280, 720, "Hexwave", nullptr, nullptr);
+	glfw_window = glfwCreateWindow(1280, 720, "Hexwave - 0.1", nullptr, nullptr);
 
 	if (!glfw_window) {
 		std::cout << "Failed to create window." << "\n";
@@ -192,7 +192,7 @@ void window::window_loop() {
 
 				device_config = ma_device_config_init(ma_device_type_playback);
 				device_config.playback.format   = ma_format_f32;
-				device_config.playback.channels = vid_reader.av_codec_ctx_audio->channels;
+				device_config.playback.channels = vid_reader.av_codec_ctx_audio->ch_layout.nb_channels;
 				device_config.sampleRate        = vid_reader.av_codec_ctx_audio->sample_rate;
 				device_config.dataCallback      = data_callback;
 				device_config.pUserData         = vid_reader.av_audio_fifo;
