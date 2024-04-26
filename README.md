@@ -1,12 +1,14 @@
-<div align="center"><img src="extras/HexwaveIcon.png" alt="Hexwave"/>
+<div align="center"><img src="extras/HexwaveIcon.png" width="256" height="256" alt="Hexwave"/>
 <h3>An Open-Source Interactive Film Engine that lets you create Interactive Films with ease.</h3>
 <br />
 
 [![Website](https://img.shields.io/badge/Visit_the_website!-site?style=for-the-badge&link=https%3A%2F%2Fhexwave.cc%2F)](https://hexwave.cc)
 
-### Notice
+<h4>This project is still in-progress. It may not work in its current state.</h4>
 
-This project is still in-progress. It may not work in its current state.
+</div>
+
+<hr />
 
 ## Getting Started
 
