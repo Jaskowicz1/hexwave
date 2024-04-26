@@ -56,7 +56,7 @@ jobs:
           submodules: recursive
 
       - name: Install apt packages
-        run: sudo sed -i 's/azure\.//' /etc/apt/sources.list && sudo apt update && sudo apt install -y ${{ matrix.cfg.package }} ffmpeg pkg-config libavcodec-dev libavformat-dev libswscale-dev xorg-dev
+        run: sudo sed -i 's/azure\.//' /etc/apt/sources.list && sudo add-apt-repository ppa:ubuntuhandbook1/ffmpeg6 && sudo apt update && sudo apt install -y ${{ matrix.cfg.package }} ffmpeg pkg-config libavcodec-dev libavformat-dev libswscale-dev xorg-dev
 
       - name: Read FFmpeg Version (DEBUG)
         run: ffmpeg -version
