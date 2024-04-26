@@ -1,5 +1,8 @@
-# interactive-film-engine
-A game engine that allows people to make and export interactive films!
+<div align="center"><img src="extras/HexwaveIcon.png" alt="Hexwave"/>
+<h3>An Open-Source Interactive Film Engine that lets you create Interactive Films with ease.</h3>
+<br />
+
+[![Website](https://img.shields.io/badge/Visit_the_website!-site?style=for-the-badge&link=https%3A%2F%2Fhexwave.cc%2F)](https://hexwave.cc)
 
 ### Notice
 
@@ -7,18 +10,15 @@ This project is still in-progress. It may not work in its current state.
 
 ## Getting Started
 
-### Stable (Released)
-Download the latest version, for your operating system, from the releases section and then run it!
+#### Linux/Unix (NOT OSX)
 
-### Development (Source)
+*Note: Unix based platforms other than Mac OSX have not been tested. Hexwave may not work on those platforms.*
 
-*Note: I recommend you do not use this version unless you need to or want to. It's usually better to use a stable version unless you're wanting an experimental feature.*
+Download the git repo (via `git clone` or downloading as a zip) and put it somewhere! From there, run `cmake -B build` in the folder and then `cmake --build build -j4`.****
 
-#### Linux/Unix
+#### Mac OSX
 
-*Note: Unix has not been tested yet, however, I assume it will be working as similar.*
-
-Download the git repo (via `git clone` or downloading as a zip) and put it somewhere! From there, run `cmake -B build` in the folder and then `cmake --build build -j4`.
+Sadly, in the current state of Hexwave, OSX is not supported as OpenGL seems to not be supported. Metal support is coming.
 
 #### Windows
 
@@ -34,6 +34,7 @@ Coming soon...
 - `glfw` (will auto download upon `cmake -B build`)
 - `glad` (will auto download upon `cmake -B build`)
 - `glm` (will auto download upon `cmake -B build`)
+- OpenGL 1.5+ (Not needed for Mac OSX).
 
 ### Linux Only:
 
