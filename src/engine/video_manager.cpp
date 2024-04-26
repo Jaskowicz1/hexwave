@@ -366,7 +366,7 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 			    &av_codec_audio_params->ch_layout, (AVSampleFormat)av_codec_audio_params->format, av_codec_audio_params->sample_rate,
 			    0, nullptr);
 
-	state->av_audio_fifo = av_audio_fifo_alloc(AV_SAMPLE_FMT_FLT, av_codec_audio_params->channels, 1);
+	state->av_audio_fifo = av_audio_fifo_alloc(AV_SAMPLE_FMT_FLT, av_codec_audio_params->ch_layout.nb_channels, 1);
 
 	current_video = vid;
 
@@ -413,8 +413,7 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 
 			AVFrame* temp_frame = av_frame_alloc();
 			temp_frame->sample_rate = state->av_audio_frame->sample_rate;
-			temp_frame->channel_layout = state->av_audio_frame->channel_layout;
-			temp_frame->channels = state->av_audio_frame->channels;
+			temp_frame->ch_layout = state->av_audio_frame->ch_layout;
 			temp_frame->format = AV_SAMPLE_FMT_FLT;
 
 			response = swr_convert_frame(state->swr_resampler_ctx, temp_frame, state->av_audio_frame);
