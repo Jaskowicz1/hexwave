@@ -366,6 +366,7 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 
 	std::cout << "sample rate: " << av_codec_audio_params->sample_rate << "\n";
 
+	// This does not work in FFmpeg 4.4.x and below. Need to wrap in legacy ifdef eventually.
 	swr_alloc_set_opts2(&state->swr_resampler_ctx,
 			    &av_codec_audio_params->ch_layout, AV_SAMPLE_FMT_FLT, av_codec_audio_params->sample_rate,
 			    &av_codec_audio_params->ch_layout, (AVSampleFormat)av_codec_audio_params->format, av_codec_audio_params->sample_rate,

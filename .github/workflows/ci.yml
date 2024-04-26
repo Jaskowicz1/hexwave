@@ -32,8 +32,8 @@ jobs:
     strategy:
       fail-fast: false # Don't fail everything if one fails. We want to test each OS/Compiler individually
       matrix:
-        cfg:
-          - { arch: 'amd64', concurrency: 2, os: ubuntu-20.04, package: clang-10, cpp-version: clang++-10 }
+        cfg: #  20.04 LTS cis are off until further notice.
+          #- { arch: 'amd64', concurrency: 2, os: ubuntu-20.04, package: clang-10, cpp-version: clang++-10 }
           - { arch: 'amd64', concurrency: 2, os: ubuntu-22.04, package: clang-11, cpp-version: clang++-11 }
           - { arch: 'amd64', concurrency: 2, os: ubuntu-22.04, package: clang-12, cpp-version: clang++-12 }
           - { arch: 'amd64', concurrency: 2, os: ubuntu-22.04, package: clang-13, cpp-version: clang++-13 }
@@ -42,8 +42,8 @@ jobs:
           - { arch: 'amd64', concurrency: 2, os: ubuntu-22.04, package: g++-12, cpp-version: g++-12 }
           - { arch: 'amd64', concurrency: 2, os: ubuntu-22.04, package: g++-11, cpp-version: g++-11 }
           - { arch: 'amd64', concurrency: 2, os: ubuntu-22.04, package: g++-10, cpp-version: g++-10 }
-          - { arch: 'amd64', concurrency: 2, os: ubuntu-20.04, package: g++-9, cpp-version: g++-9 }
-          - { arch: 'amd64', concurrency: 2, os: ubuntu-20.04, package: g++-8, cpp-version: g++-8 }
+          #- { arch: 'amd64', concurrency: 2, os: ubuntu-20.04, package: g++-9, cpp-version: g++-9 }
+          #- { arch: 'amd64', concurrency: 2, os: ubuntu-20.04, package: g++-8, cpp-version: g++-8 }
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -75,7 +75,7 @@ jobs:
     concurrency:
       group: Deck-${{ github.workflow }}-${{ github.ref }}-${{ matrix.cfg.arch }}-(${{ matrix.cfg.cpp-version }})
       cancel-in-progress: true
-    name: Linux (Fake Steam Deck) ${{matrix.cfg.arch}} (${{matrix.cfg.cpp-version}})
+    name: Fake Steam Deck ${{matrix.cfg.arch}} (${{matrix.cfg.cpp-version}})
     runs-on: ${{matrix.cfg.os}}
     strategy:
       fail-fast: false # Don't fail everything if one fails. We want to test each OS/Compiler individually

@@ -33,7 +33,7 @@ Coming soon...
 ## Dependencies
 
 - `cmake` (version 3.25 or higher)
-- `ffmpeg`
+- `ffmpeg` (version 5 or higher)
 - `imgui` (will auto download upon `cmake -B build`)
 - `glfw` (will auto download upon `cmake -B build`)
 - `glad` (will auto download upon `cmake -B build`)
