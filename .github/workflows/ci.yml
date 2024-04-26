@@ -58,6 +58,9 @@ jobs:
       - name: Install apt packages
         run: sudo sed -i 's/azure\.//' /etc/apt/sources.list && sudo apt update && sudo apt install -y ${{ matrix.cfg.package }} ffmpeg pkg-config libavcodec-dev libavformat-dev libswscale-dev xorg-dev
 
+      - name: Read FFmpeg Version (DEBUG)
+        run: ffmpeg -version
+
       - name: Generate CMake
         run: cmake -B build
         env:
@@ -78,7 +81,7 @@ jobs:
       fail-fast: false # Don't fail everything if one fails. We want to test each OS/Compiler individually
       matrix:
         cfg:
-          - { arch: 'amd64', concurrency: 2, os: ubuntu-22.04, package: clang-14, cpp-version: clang++-14 }
+          - { arch: 'amd64', concurrency: 2, os: ubuntu-22.04, package: g++-12, cpp-version: g++-12 }
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -92,7 +95,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get -y install autoconf automake libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev meson ninja-build pkg-config texinfo yasm zlib1g-dev
 
       - name: Install FFmpeg 6.0
-        run: wget https://ffmpeg.org/releases/ffmpeg-6.0.1.tar.xz && tar -xvf ffmpeg-6.0.1.tar.xz && cd ffmpeg-6.0.1 && ./configure && ./make && sudo make install
+        run: wget https://ffmpeg.org/releases/ffmpeg-6.0.1.tar.xz && tar -xvf ffmpeg-6.0.1.tar.xz && cd ffmpeg-6.0.1 && ./configure && make && sudo make install
 
       - name: Read FFmpeg Version
         run: ffmpeg -version
