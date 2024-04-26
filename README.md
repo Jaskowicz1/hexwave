@@ -20,7 +20,9 @@ Download the git repo (via `git clone` or downloading as a zip) and put it somew
 
 #### Mac OSX
 
-Sadly, in the current state of Hexwave, OSX is not supported as OpenGL seems to not be supported. Metal support is coming.
+Sadly, in the current state of Hexwave, OSX is not supported as Hexwave uses older versions of OpenGL that do not work on OSX.
+
+This is subject to change.
 
 #### Windows
 
@@ -36,7 +38,7 @@ Coming soon...
 - `glfw` (will auto download upon `cmake -B build`)
 - `glad` (will auto download upon `cmake -B build`)
 - `glm` (will auto download upon `cmake -B build`)
-- OpenGL 1.5+ (Not needed for Mac OSX).
+- OpenGL 4.1+
 
 ### Linux Only:
 
