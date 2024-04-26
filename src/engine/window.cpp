@@ -14,6 +14,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#if LIBAVFORMAT_VERSION_MAJOR < 59
+#define FFMPEG_LEGACY
+#endif
+
 //#define MA_DEBUG_OUTPUT
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio/miniaudio.h"
@@ -192,7 +196,11 @@ void window::window_loop() {
 
 				device_config = ma_device_config_init(ma_device_type_playback);
 				device_config.playback.format   = ma_format_f32;
+#ifndef FFMPEG_LEGACY
 				device_config.playback.channels = vid_reader.av_codec_ctx_audio->ch_layout.nb_channels;
+#else
+				device_config.playback.channels = vid_reader.av_codec_ctx_audio->channels;
+#endif
 				device_config.sampleRate        = vid_reader.av_codec_ctx_audio->sample_rate;
 				device_config.dataCallback      = data_callback;
 				device_config.pUserData         = vid_reader.av_audio_fifo;

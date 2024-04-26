@@ -360,13 +360,16 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 
 	std::cout << "sample rate: " << av_codec_audio_params->sample_rate << "\n";
 
-
 	swr_alloc_set_opts2(&state->swr_resampler_ctx,
 			    &av_codec_audio_params->ch_layout, AV_SAMPLE_FMT_FLT, av_codec_audio_params->sample_rate,
 			    &av_codec_audio_params->ch_layout, (AVSampleFormat)av_codec_audio_params->format, av_codec_audio_params->sample_rate,
 			    0, nullptr);
 
+#ifndef FFMPEG_LEGACY
 	state->av_audio_fifo = av_audio_fifo_alloc(AV_SAMPLE_FMT_FLT, av_codec_audio_params->ch_layout.nb_channels, 1);
+#else
+	state->av_audio_fifo = av_audio_fifo_alloc(AV_SAMPLE_FMT_FLT, av_codec_audio_params->channels, 1);
+#endif
 
 	current_video = vid;
 
@@ -413,7 +416,12 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 
 			AVFrame* temp_frame = av_frame_alloc();
 			temp_frame->sample_rate = state->av_audio_frame->sample_rate;
+#ifndef FFMPEG_LEGACY
 			temp_frame->ch_layout = state->av_audio_frame->ch_layout;
+#else
+			temp_frame->channel_layout = state->av_audio_frame->channel_layout;
+			temp_frame->channels = state->av_audio_frame->channels;
+#endif
 			temp_frame->format = AV_SAMPLE_FMT_FLT;
 
 			response = swr_convert_frame(state->swr_resampler_ctx, temp_frame, state->av_audio_frame);
