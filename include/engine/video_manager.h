@@ -47,13 +47,15 @@ public:
 
 	bool open_video(video_reader* state, const video& vid);
 
-	uint64_t get_video_length(const char* file);
+	double get_video_length(const char* file);
 
 	bool read_video_frame(GLFWwindow* window, video_reader* state, uint8_t* frame_buffer, int64_t* pts);
 
 	void add_video(const video& video_to_add);
 
-	void add_video(const std::string_view id, const std::string_view name, const uint64_t length, const std::string_view path);
+	void add_video(const json& j);
+
+	void add_video(const std::string_view id, const std::string_view name, const double length, const std::string_view path);
 
 	void remove_video(const std::string_view id);
 

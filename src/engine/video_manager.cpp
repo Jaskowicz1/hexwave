@@ -14,7 +14,13 @@ void video_manager::add_video(const video& video_to_add) {
 	videos.emplace(video_to_add.id, video_to_add);
 }
 
-void video_manager::add_video(const std::string_view id, const std::string_view name, const uint64_t length, const std::string_view path) {
+void video_manager::add_video(const json& j) {
+	video vid;
+	vid.fill_from_json(&j);
+	videos.emplace(vid.id, vid);
+}
+
+void video_manager::add_video(const std::string_view id, const std::string_view name, const double length, const std::string_view path) {
 	video vid;
 	vid.id = id;
 	vid.name = name;
@@ -71,8 +77,16 @@ void video_manager::render_window(video_reader& reader) {
 
 						std::string id_txt("Video name: " + vid.name);
 						ImGui::Text("%s", id_txt.c_str());
+
 						std::string length_txt("Video length: " + std::to_string(vid.length) + " seconds");
 						ImGui::Text("%s", length_txt.c_str());
+
+						std::string linked_txt("Video linked to: " + vid.next_video_id);
+						ImGui::Text("%s", linked_txt.c_str());
+
+						std::string loop_txt("Video loops? " + std::string(vid.loop ? "True" : "False"));
+						ImGui::Text("%s", loop_txt.c_str());
+
 						std::string path_txt("Video path: " + vid.path);
 						ImGui::Text("%s", path_txt.c_str());
 
@@ -180,14 +194,22 @@ void video_manager::render_window(video_reader& reader) {
 			static char name[64];
 			ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
 
+			static char linked_id[512];
+			ImGui::InputText("Linked to", linked_id, IM_ARRAYSIZE(linked_id));
+
+			static bool should_loop;
+			ImGui::Checkbox("Loop?", &should_loop);
+
 			static char path[512];
 			ImGui::InputText("Video Path", path, IM_ARRAYSIZE(path));
 
 			if (ImGui::Button("Add")) {
-				if(strlen(id) != 0 && strlen(name) != 0 && strlen(path) != 0) {
-					uint64_t len = get_video_length(path);
+				if(strlen(id) != 0 && strlen(name) != 0 && strlen(linked_id) != 0 && strlen(path) != 0) {
+					double len = get_video_length(path);
 					if(len != 0) {
 						add_video(id, name, len, path);
+						videos[id].next_video_id = linked_id;
+						videos[id].loop = should_loop;
 						ImGui::CloseCurrentPopup();
 					} else {
 						ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Invalid path! Check the path of the video and make sure it's the right file type!"});
@@ -214,7 +236,7 @@ void video_manager::update_option(video &vid, option &opt) {
 	}
 }
 
-uint64_t video_manager::get_video_length(const char *file) {
+double video_manager::get_video_length(const char *file) {
 	AVFormatContext* av_format_ctx = avformat_alloc_context();
 	if(!av_format_ctx) {
 		std::cout << "Failed to create an AVFormatContext." << "\n";
@@ -230,7 +252,7 @@ uint64_t video_manager::get_video_length(const char *file) {
 	AVCodec* av_codec{nullptr};
 	AVRational time_base{};
 
-	uint64_t duration{0};
+	double duration{0};
 
 	for (int i = 0; i < av_format_ctx->nb_streams; ++i) {
 		av_codec_params = av_format_ctx->streams[i]->codecpar;
@@ -380,17 +402,23 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 
 	current_video = vid;
 
-	bool found = false;
+	if(vid.loop) {
+		next_video = current_video;
+	} else if(!vid.next_video_id.empty()) {
+		next_video = videos[vid.next_video_id];
+	} else {
+		bool found = false;
 
-	for(const auto& temp_vid : videos) {
-		if(temp_vid.second.id == current_video.id) {
-			found = true;
-			continue;
-		}
+		for(const auto& temp_vid : videos) {
+			if(temp_vid.second.id == current_video.id) {
+				found = true;
+				continue;
+			}
 
-		if(found) {
-			next_video = temp_vid.second;
-			break;
+			if(found) {
+				next_video = temp_vid.second;
+				break;
+			}
 		}
 	}
 

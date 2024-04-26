@@ -44,7 +44,7 @@ bool utilities::load_project(video_manager& manager) {
 	json j = json::parse(project_file);
 
 	for (const auto& vid : j["videos"]) {
-		manager.add_video(vid["id"].get<std::string>(), vid["name"].get<std::string>(), vid["length"].get<uint64_t>(), vid["path"].get<std::string>());
+		manager.add_video(vid);
 
 		for (const auto& opt : vid["options"]) {
 			manager.add_option(manager.get_videos()[vid["id"].get<std::string>()], opt["id"].get<std::string>(),

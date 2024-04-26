@@ -2,6 +2,7 @@
 
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
+#include <iostream>
 
 using json = nlohmann::json;
 
@@ -25,6 +26,7 @@ std::string string_json(T&& obj) {
 inline void set_string_not_null(const json* j, const char* keyname, std::string& value) {
 	auto key = j->find(keyname);
 	if(key != j->end()) {
+		std::cout << "FOUND " << keyname << "\n";
 		value = !key->is_null() && key->is_string() ? key->get<std::string>() : "";
 	}
 }
@@ -40,6 +42,13 @@ inline void set_uint64_not_null(const json* j, const char* keyname, uint64_t& va
 	auto key = j->find(keyname);
 	if(key != j->end()) {
 		value = !key->is_null() && !key->is_string() ? key->get<uint64_t>() : 0;
+	}
+}
+
+inline void set_double_not_null(const json* j, const char* keyname, double& value) {
+	auto key = j->find(keyname);
+	if(key != j->end()) {
+		value = !key->is_null() && !key->is_string() ? key->get<double>() : 0;
 	}
 }
 

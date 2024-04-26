@@ -11,7 +11,7 @@ struct option {
 struct video {
 	std::string id{};
 	std::string name{};
-	uint64_t length{0};
+	double length{0};
 	std::string path{};
 	std::string next_video_id{};
 	bool loop{false};

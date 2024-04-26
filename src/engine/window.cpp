@@ -180,6 +180,9 @@ void window::window_loop() {
 
 			uint64_t pt_rounded = pt_in_seconds;
 
+			std::cout << pt_in_seconds << "\n";
+			std::cout << manager.current_video.length << "\n";
+
 			if(pts == 0) {
 				glfwSetTime(0.0);
 				// somehow, this can happen twice. uh oh
@@ -196,11 +199,11 @@ void window::window_loop() {
 
 				device_config = ma_device_config_init(ma_device_type_playback);
 				device_config.playback.format   = ma_format_f32;
-#ifndef FFMPEG_LEGACY
-				device_config.playback.channels = vid_reader.av_codec_ctx_audio->ch_layout.nb_channels;
-#else
-				device_config.playback.channels = vid_reader.av_codec_ctx_audio->channels;
-#endif
+				#ifndef FFMPEG_LEGACY
+					device_config.playback.channels = vid_reader.av_codec_ctx_audio->ch_layout.nb_channels;
+				#else
+					device_config.playback.channels = vid_reader.av_codec_ctx_audio->channels;
+				#endif
 				device_config.sampleRate        = vid_reader.av_codec_ctx_audio->sample_rate;
 				device_config.dataCallback      = data_callback;
 				device_config.pUserData         = vid_reader.av_audio_fifo;
@@ -220,7 +223,7 @@ void window::window_loop() {
 					show_choices = true;
 				}
 
-			} else if(pt_rounded == manager.current_video.length) {
+			} else if(pt_in_seconds >= manager.current_video.length - 0.75 && !first_frame) {
 				std::cout << "End reached, doing next video..." << "\n";
 				first_frame = true;
 				delete[] frame_data;
@@ -235,7 +238,9 @@ void window::window_loop() {
 			}
 
 			while (pt_in_seconds > glfwGetTime()) {
-				glfwWaitEventsTimeout(pt_in_seconds - glfwGetTime());
+				if(pt_in_seconds - glfwGetTime() >= 0) {
+					glfwWaitEventsTimeout(pt_in_seconds - glfwGetTime());
+				}
 			}
 		}
 
