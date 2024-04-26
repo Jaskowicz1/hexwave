@@ -4,6 +4,12 @@
 #include "imgui_internal.h"
 #include "ImGuiNotify.hpp"
 
+#if LIBAVFORMAT_VERSION_MAJOR < 59
+	#ifndef FFMPEG_LEGACY
+	#define FFMPEG_LEGACY
+	#endif
+#endif
+
 void video_manager::add_video(const video& video_to_add) {
 	videos.emplace(video_to_add.id, video_to_add);
 }

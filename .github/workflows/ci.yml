@@ -90,6 +90,8 @@ jobs:
 
       - name: Checkout Hexwave
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+        with:
+          submodules: recursive
 
       - name: Install FFmpeg dependencies
         run: sudo apt-get update -qq && sudo apt-get -y install autoconf automake libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev meson ninja-build pkg-config texinfo yasm zlib1g-dev
