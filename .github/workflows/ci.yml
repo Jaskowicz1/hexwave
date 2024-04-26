@@ -52,6 +52,8 @@ jobs:
 
       - name: Checkout Hexwave
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+        with:
+          submodules: recursive
 
       - name: Install apt packages
         run: sudo sed -i 's/azure\.//' /etc/apt/sources.list && sudo apt update && sudo apt install -y ${{ matrix.cfg.package }} ffmpeg pkg-config libavcodec-dev libavformat-dev libswscale-dev xorg-dev
@@ -68,9 +70,9 @@ jobs:
     permissions:
       contents: write
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-${{ matrix.cfg.arch }}-(${{ matrix.cfg.cpp-version }})
+      group: Deck-${{ github.workflow }}-${{ github.ref }}-${{ matrix.cfg.arch }}-(${{ matrix.cfg.cpp-version }})
       cancel-in-progress: true
-    name: Linux ${{matrix.cfg.arch}} (${{matrix.cfg.cpp-version}})
+    name: Linux (Fake Steam Deck) ${{matrix.cfg.arch}} (${{matrix.cfg.cpp-version}})
     runs-on: ${{matrix.cfg.os}}
     strategy:
       fail-fast: false # Don't fail everything if one fails. We want to test each OS/Compiler individually
@@ -87,10 +89,10 @@ jobs:
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
 
       - name: Add ffmpeg6
-        run: sudo add-apt-repository ppa:ubuntuhandbook1/ffmpeg6 && sudo apt update && sudo apt install ffmpeg
+        run: wget https://ffmpeg.org/releases/ffmpeg-6.0.1.tar.xz && tar -xvf ffmpeg-6.0.1.tar.xz && cd ffmpeg-6.0.1 && ./configure && ./make && sudo make install
 
       - name: Read FFmpeg Version
-        run: ffmpeg --version
+        run: ffmpeg -version
 
       - name: Install apt packages
         run: sudo sed -i 's/azure\.//' /etc/apt/sources.list && sudo apt update && sudo apt install -y ${{ matrix.cfg.package }} pkg-config libavcodec-dev libavformat-dev libswscale-dev xorg-dev
