@@ -242,21 +242,19 @@ void window::window_loop() {
 			}
 		}
 
-		if (frame_data) {
-			glBindTexture(GL_TEXTURE_2D, video_texture);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_data);
+		glBindTexture(GL_TEXTURE_2D, video_texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_data);
 
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, video_texture);
-			// Mac OSX doesn't support this. Why? Who knows.
-			glBegin(GL_QUADS);
-			glTexCoord2d(0, 0); glVertex2i(0, 0);
-			glTexCoord2d(1, 0); glVertex2i(frame_width, 0);
-			glTexCoord2d(1, 1); glVertex2i(frame_width, frame_height);
-			glTexCoord2d(0, 1); glVertex2i(0, frame_height);
-			glEnd();
-			glDisable(GL_TEXTURE_2D);
-		}
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, video_texture);
+		// Mac OSX doesn't support this. Why? Who knows.
+		glBegin(GL_QUADS);
+		glTexCoord2d(0, 0); glVertex2i(0, 0);
+		glTexCoord2d(1, 0); glVertex2i(frame_width, 0);
+		glTexCoord2d(1, 1); glVertex2i(frame_width, frame_height);
+		glTexCoord2d(0, 1); glVertex2i(0, frame_height);
+		glEnd();
+		glDisable(GL_TEXTURE_2D);
 
 		//const auto& render_finish = std::chrono::high_resolution_clock::now();
 
