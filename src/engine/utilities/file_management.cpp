@@ -10,11 +10,14 @@
 bool utilities::save_project(video_manager& manager) {
 
 	char filename[1024];
+	bool fail = false;
 
 #ifndef _WIN32 // !_WIN32
 
 	FILE *f = popen("zenity --file-selection --save --title=\"Save project\"", "r");
-	fgets(filename, 1024, f);
+	fail = fgets(filename, 1024, f) == NULL;
+	pclose(f);
+	f = NULL;
 
 #else // _WIN32
 
@@ -37,7 +40,8 @@ bool utilities::save_project(video_manager& manager) {
 
 #endif
 
-	if (std::strlen(filename) == 0) {
+	if (fail || std::strlen(filename) == 0) {
+		perror("fgets");
 		return false;
 	}
 
@@ -60,11 +64,14 @@ bool utilities::save_project(video_manager& manager) {
 bool utilities::load_project(video_manager& manager) {
 
 	char filename[1024];
+	bool fail = false;
 
 #ifndef _WIN32 // !_WIN32
 
 	FILE *f = popen(R"(zenity --file-selection --title="Open project")", "r");
-	fgets(filename, 1024, f);
+	fail = fgets(filename, 1024, f) == NULL;
+	pclose(f);
+	f = NULL;
 
 #else // _WIN32
 
@@ -88,7 +95,8 @@ bool utilities::load_project(video_manager& manager) {
 
 #endif
 
-	if (std::strlen(filename) == 0) {
+	if (fail || std::strlen(filename) == 0) {
+		perror("fgets");
 		return false;
 	}
 
@@ -107,8 +115,9 @@ bool utilities::load_project(video_manager& manager) {
 		manager.add_video(vid);
 
 		for (const auto& opt : vid["options"]) {
-			manager.add_option(manager.get_videos()[vid["id"].get<std::string>()], opt["id"].get<std::string>(),
-				opt["name"].get<std::string>(), opt["video_id"].get<std::string>());
+			manager.add_option(manager.get_videos()[vid["id"].get<std::string>()],
+					opt["id"].get<std::string>(),
+					opt["name"].get<std::string>(), opt["video_id"].get<std::string>());
 		}
 	}
 
@@ -116,3 +125,5 @@ bool utilities::load_project(video_manager& manager) {
 
 	return true;
 }
+
+// vim sw=4 ts=4 noet
