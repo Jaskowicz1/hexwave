@@ -216,8 +216,10 @@ void window::window_loop() {
 					return;
 				}
 
-				if(manager.current_video.always_show_options) {
+				if (manager.current_video.always_show_options) {
 					show_choices = true;
+				} else {
+					show_choices = false;
 				}
 
 			} else if(pt_in_seconds >= manager.current_video.length - 0.75 && !first_frame) {
@@ -374,12 +376,14 @@ void window::window_loop() {
 						manager.current_video.name = "";
 
 						//std::cout << "attempting to play: " << opt.second.video_id << "\n";
-						video vid = manager.get_videos().at(opt.second.video_id);
+						video vid = manager.get_videos()[opt.second.video_id];
 						//std::cout << "video name: " << vid.name << "\n";
 						if (!manager.open_video(&vid_reader, vid)) {
 							std::cout << "Failed to read frame data." << "\n";
 							break;
 						}
+
+						show_choices = false;
 
 						break;
 					}

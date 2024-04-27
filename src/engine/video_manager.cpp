@@ -278,6 +278,9 @@ double video_manager::get_video_length(const char *file) {
 		}
 	}
 
+	avformat_close_input(&av_format_ctx);
+	avformat_free_context(av_format_ctx);
+
 	return duration * (double)time_base.num / (double)time_base.den;
 }
 
@@ -287,6 +290,19 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 
 	state->sws_scaler_ctx = nullptr;
 	state->swr_resampler_ctx = nullptr;
+
+	avformat_close_input(&state->av_format_ctx);
+	avformat_free_context(state->av_format_ctx);
+
+	avcodec_close(state->av_codec_ctx_video);
+	avcodec_free_context(&state->av_codec_ctx_video);
+
+	avcodec_close(state->av_codec_ctx_audio);
+	avcodec_free_context(&state->av_codec_ctx_audio);
+
+	av_frame_free(&state->av_frame);
+	av_frame_free(&state->av_audio_frame);
+	av_packet_free(&state->av_packet);
 
 	const char* file = vid.path.c_str();
 
