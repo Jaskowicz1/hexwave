@@ -13,8 +13,13 @@ bool utilities::save_project(video_manager& manager) {
 
 #ifndef _WIN32 // !_WIN32
 
-	FILE *f = popen("zenity --file-selection --save --title=\"Save project\"", "r");
-	fgets(filename, 1024, f);
+	FILE *f = popen("zenity --file-selection --save --title=\"Save project\" --file-filter=*.hexw", "r");
+	if (fgets(filename, 1024, f) == nullptr) {
+		return false;
+	}
+
+	pclose(f);
+	f = nullptr;
 
 #else // _WIN32
 
@@ -31,7 +36,7 @@ bool utilities::save_project(video_manager& manager) {
 	ofn.lpstrFileTitle = NULL;
 	ofn.nMaxFileTitle = 0;
 	ofn.lpstrInitialDir = NULL;
-	ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
 	GetSaveFileName(&ofn);
 
@@ -63,15 +68,18 @@ bool utilities::load_project(video_manager& manager) {
 
 #ifndef _WIN32 // !_WIN32
 
-	FILE *f = popen(R"(zenity --file-selection --title="Open project")", "r");
-	fgets(filename, 1024, f);
+	FILE *f = popen(R"(zenity --file-selection --title="Open project" --file-filter=*.hexw)", "r");
+	if (fgets(filename, 1024, f) == nullptr) {
+		return false;
+	}
+
+	pclose(f);
+	f = nullptr;
 
 #else // _WIN32
 
-	OPENFILENAME ofn;
+	OPENFILENAME ofn{};
 
-	// open a file name
-	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = NULL;
 	ofn.lpstrFile = filename;
@@ -101,15 +109,21 @@ bool utilities::load_project(video_manager& manager) {
 		return false;
 	}
 
-	json j = json::parse(project_file);
+	try {
+		json j = json::parse(project_file);
 
-	for (const auto& vid : j["videos"]) {
-		manager.add_video(vid);
+		for (const auto& vid : j["videos"]) {
+			manager.add_video(vid);
 
-		for (const auto& opt : vid["options"]) {
-			manager.add_option(manager.get_videos()[vid["id"].get<std::string>()], opt["id"].get<std::string>(),
-				opt["name"].get<std::string>(), opt["video_id"].get<std::string>());
+			for (const auto& opt : vid["options"]) {
+				manager.add_option(manager.get_videos()[vid["id"].get<std::string>()], opt["id"].get<std::string>(),
+					opt["name"].get<std::string>(), opt["video_id"].get<std::string>());
+			}
 		}
+	}
+	catch (json::parse_error& exception) {
+		project_file.close();
+		return false;
 	}
 
 	project_file.close();
