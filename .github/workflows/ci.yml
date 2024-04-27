@@ -58,9 +58,6 @@ jobs:
       - name: Install apt packages
         run: sudo sed -i 's/azure\.//' /etc/apt/sources.list && sudo add-apt-repository ppa:ubuntuhandbook1/ffmpeg6 && sudo apt update && sudo apt install -y ${{ matrix.cfg.package }} ffmpeg pkg-config libavcodec-dev libavformat-dev libswscale-dev xorg-dev
 
-      - name: Read FFmpeg Version (DEBUG)
-        run: ffmpeg -version
-
       - name: Generate CMake
         run: cmake -B build
         env:
@@ -99,9 +96,6 @@ jobs:
       - name: Install FFmpeg 6.0
         run: wget https://ffmpeg.org/releases/ffmpeg-6.0.1.tar.xz && tar -xvf ffmpeg-6.0.1.tar.xz && cd ffmpeg-6.0.1 && ./configure && make && sudo make install
 
-      - name: Read FFmpeg Version
-        run: ffmpeg -version
-
       - name: Install apt packages
         run: sudo sed -i 's/azure\.//' /etc/apt/sources.list && sudo apt update && sudo apt install -y ${{ matrix.cfg.package }} libavcodec-dev libavformat-dev libswscale-dev xorg-dev
 
@@ -113,11 +107,8 @@ jobs:
       - name: Build Project
         run: cmake --build build -j${{ matrix.cfg.concurrency }}
 
-      - name: zip Build Folder
-        run: zip -r hexwave-steamdeck.zip build
-
       - name: Upload zip
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
-          name: "Hexwave Precompiled for Steam Deck"
-          path: '${{github.workspace}}/hexwave-steamdeck.zip'
+          name: "hexwave-steamdeck"
+          path: '${{github.workspace}}/build/'

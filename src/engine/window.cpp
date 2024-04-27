@@ -156,7 +156,7 @@ void window::window_loop() {
 
 		static bool first_frame = true;
 
-		static bool show_choices;
+		static bool show_choices{ false };
 
 		if(!manager.current_video.name.empty()) {
 
@@ -231,6 +231,18 @@ void window::window_loop() {
 				if(!manager.open_video(&vid_reader, manager.next_video)) {
 					std::cout << "Failed to read frame data." << "\n";
 					break;
+				}
+			}
+
+			if (manager.current_video.options_show_at > 0) {
+				if (pt_in_seconds >= manager.current_video.options_show_at && pt_in_seconds <= manager.current_video.options_hide_at) {
+					if (!show_choices) {
+						show_choices = true;
+					}
+				} else if (pt_in_seconds >= manager.current_video.options_show_at && pt_in_seconds >= manager.current_video.options_hide_at) {
+					if (show_choices) {
+						show_choices = false;
+					}
 				}
 			}
 
@@ -343,36 +355,38 @@ void window::window_loop() {
 			ImGui::EndMainMenuBar();
 		}
 
-		if(!manager.current_video.options.empty() && !first_frame) {
-			ImGui::Begin("Options Select", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
-			for(const auto& opt : manager.current_video.options) {
+		if (show_choices) {
+			if (!manager.current_video.options.empty() && !first_frame) {
+				ImGui::Begin("Options Select", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
+				for (const auto& opt : manager.current_video.options) {
 
-				// Pre-cautions
-				if(opt.second.id.empty() || opt.second.name.empty()) {
-					continue;
-				}
-
-				std::string option_text(opt.second.name);
-				if(ImGui::Button(option_text.c_str())) {
-					first_frame = true;
-					delete[] frame_data;
-					frame_data = nullptr;
-
-					manager.current_video.name = "";
-
-					std::cout << "attempting to play: " << opt.second.video_id << "\n";
-					video vid = manager.get_videos().at(opt.second.video_id);
-					std::cout << "video name: " << vid.name << "\n";
-					if(!manager.open_video(&vid_reader, vid)) {
-						std::cout << "Failed to read frame data." << "\n";
-						break;
+					// Pre-cautions
+					if (opt.second.id.empty() || opt.second.name.empty()) {
+						continue;
 					}
 
-					break;
+					std::string option_text(opt.second.name);
+					if (ImGui::Button(option_text.c_str())) {
+						first_frame = true;
+						delete[] frame_data;
+						frame_data = nullptr;
+
+						manager.current_video.name = "";
+
+						std::cout << "attempting to play: " << opt.second.video_id << "\n";
+						video vid = manager.get_videos().at(opt.second.video_id);
+						std::cout << "video name: " << vid.name << "\n";
+						if (!manager.open_video(&vid_reader, vid)) {
+							std::cout << "Failed to read frame data." << "\n";
+							break;
+						}
+
+						break;
+					}
+					ImGui::SameLine();
 				}
-				ImGui::SameLine();
+				ImGui::End();
 			}
-			ImGui::End();
 		}
 
 		manager.render_window(vid_reader);

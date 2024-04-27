@@ -197,8 +197,17 @@ void video_manager::render_window(video_reader& reader) {
 			static char linked_id[512];
 			ImGui::InputText("Linked to", linked_id, IM_ARRAYSIZE(linked_id));
 
-			static bool should_loop;
+			static bool should_loop{ false };
 			ImGui::Checkbox("Loop?", &should_loop);
+
+			static bool always_show_options{ false };
+			ImGui::Checkbox("Always Display Options?", &always_show_options);
+
+			static int options_show_at{ 0 };
+			ImGui::InputInt("Options Show At: ", &options_show_at);
+
+			static int options_hide_at{ 0 };
+			ImGui::InputInt("Options Hide At: ", &options_hide_at);
 
 			static char path[512];
 			ImGui::InputText("Video Path", path, IM_ARRAYSIZE(path));
@@ -210,6 +219,9 @@ void video_manager::render_window(video_reader& reader) {
 						add_video(id, name, len, path);
 						videos[id].next_video_id = linked_id;
 						videos[id].loop = should_loop;
+						videos[id].always_show_options = always_show_options;
+						videos[id].options_show_at = options_show_at;
+						videos[id].options_hide_at = options_hide_at;
 						ImGui::CloseCurrentPopup();
 					} else {
 						ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Invalid path! Check the path of the video and make sure it's the right file type!"});
@@ -385,7 +397,7 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 		return false;
 	}
 
-	std::cout << "sample rate: " << av_codec_audio_params->sample_rate << "\n";
+	//std::cout << "sample rate: " << av_codec_audio_params->sample_rate << "\n";
 
 	// This does not work in FFmpeg 4.4.x and below. Need to wrap in legacy ifdef eventually.
 	swr_alloc_set_opts2(&state->swr_resampler_ctx,
@@ -429,7 +441,7 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 
 	while(av_read_frame(state->av_format_ctx, state->av_packet) >= 0) {
 		if(state->av_packet->stream_index != state->video_stream_index && state->av_packet->stream_index != state->audio_stream_index) {
-			std::cout << "unref..." << "\n";
+			//std::cout << "unref..." << "\n";
 			av_packet_unref(state->av_packet);
 			continue;
 		}
