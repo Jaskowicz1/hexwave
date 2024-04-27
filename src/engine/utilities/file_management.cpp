@@ -3,12 +3,39 @@
 #include <vector>
 #include "utilities/file_management.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 bool utilities::save_project(video_manager& manager) {
-#ifndef _WIN32
 
 	char filename[1024];
+
+#ifndef _WIN32 // !_WIN32
+
 	FILE *f = popen("zenity --file-selection --save --title=\"Save project\"", "r");
 	fgets(filename, 1024, f);
+
+#else // _WIN32
+
+	OPENFILENAME ofn;
+
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = NULL;
+	ofn.lpstrFile = filename;
+	ofn.lpstrFile[0] = '\0';
+	ofn.nMaxFile = sizeof(filename);
+	ofn.lpstrFilter = "Hexwave Project\0*.hexw\0";
+	ofn.nFilterIndex = 1;
+	ofn.lpstrFileTitle = NULL;
+	ofn.nMaxFileTitle = 0;
+	ofn.lpstrInitialDir = NULL;
+	ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	GetSaveFileName(&ofn);
+
+#endif
 
 	if (std::strlen(filename) == 0) {
 		return false;
@@ -27,25 +54,52 @@ bool utilities::save_project(video_manager& manager) {
 	project_file << j.dump() << "\n";
 	project_file.close();
 
-#endif // !_WIN32
 	return true;
 }
 
 bool utilities::load_project(video_manager& manager) {
 
-#ifndef _WIN32
-
 	char filename[1024];
+
+#ifndef _WIN32 // !_WIN32
+
 	FILE *f = popen(R"(zenity --file-selection --title="Open project")", "r");
 	fgets(filename, 1024, f);
 
-	if(std::strlen(filename) == 0) {
+#else // _WIN32
+
+	OPENFILENAME ofn;
+
+	// open a file name
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = NULL;
+	ofn.lpstrFile = filename;
+	ofn.lpstrFile[0] = '\0';
+	ofn.nMaxFile = sizeof(filename);
+	ofn.lpstrFilter = "Hexwave Project\0*.hexw\0All\0*.*\0";
+	ofn.nFilterIndex = 1;
+	ofn.lpstrFileTitle = NULL;
+	ofn.nMaxFileTitle = 0;
+	ofn.lpstrInitialDir = NULL;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	GetOpenFileName(&ofn);
+
+#endif
+
+	if (std::strlen(filename) == 0) {
 		return false;
 	}
 
 	manager.remove_all_videos();
 
 	std::ifstream project_file(filename);
+
+	if (project_file.bad()) {
+		std::cout << "Failed to open file." << "\n";
+		return false;
+	}
 
 	json j = json::parse(project_file);
 
@@ -54,13 +108,11 @@ bool utilities::load_project(video_manager& manager) {
 
 		for (const auto& opt : vid["options"]) {
 			manager.add_option(manager.get_videos()[vid["id"].get<std::string>()], opt["id"].get<std::string>(),
-			        opt["name"].get<std::string>(), opt["video_id"].get<std::string>());
+				opt["name"].get<std::string>(), opt["video_id"].get<std::string>());
 		}
 	}
 
 	project_file.close();
-
-#endif // !_WIN32
 
 	return true;
 }

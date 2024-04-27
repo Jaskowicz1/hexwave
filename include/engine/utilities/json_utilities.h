@@ -26,7 +26,6 @@ std::string string_json(T&& obj) {
 inline void set_string_not_null(const json* j, const char* keyname, std::string& value) {
 	auto key = j->find(keyname);
 	if(key != j->end()) {
-		std::cout << "FOUND " << keyname << "\n";
 		value = !key->is_null() && key->is_string() ? key->get<std::string>() : "";
 	}
 }

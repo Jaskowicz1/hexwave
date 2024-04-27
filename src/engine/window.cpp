@@ -180,9 +180,6 @@ void window::window_loop() {
 
 			uint64_t pt_rounded = pt_in_seconds;
 
-			std::cout << pt_in_seconds << "\n";
-			std::cout << manager.current_video.length << "\n";
-
 			if(pts == 0) {
 				glfwSetTime(0.0);
 				// somehow, this can happen twice. uh oh
@@ -238,8 +235,9 @@ void window::window_loop() {
 			}
 
 			while (pt_in_seconds > glfwGetTime()) {
-				if(pt_in_seconds - glfwGetTime() >= 0) {
-					glfwWaitEventsTimeout(pt_in_seconds - glfwGetTime());
+				float timeout = pt_in_seconds - glfwGetTime();
+				if (timeout >= 0) {
+					glfwWaitEventsTimeout(timeout);
 				}
 			}
 		}
@@ -250,6 +248,7 @@ void window::window_loop() {
 
 			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, video_texture);
+			// Mac OSX doesn't support this. Why? Who knows.
 			glBegin(GL_QUADS);
 			glTexCoord2d(0, 0); glVertex2i(0, 0);
 			glTexCoord2d(1, 0); glVertex2i(frame_width, 0);
@@ -297,6 +296,14 @@ void window::window_loop() {
 						ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to save project. Check the file path you're saving to. If the problem persists, report this issue!"});
 				} else if (ImGui::MenuItem("Quit")) {
 					close_window();
+				}
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Edit")) {
+				if (ImGui::MenuItem("Project Settings")) {
+					ImGui::InsertNotification({ ImGuiToastType::Error, 3000, "Not currently implemented." });
 				}
 
 				ImGui::EndMenu();

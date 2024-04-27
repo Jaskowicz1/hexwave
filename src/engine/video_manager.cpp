@@ -219,9 +219,8 @@ void video_manager::render_window(video_reader& reader) {
 
 			ImGui::EndPopup();
 		}
-
-		ImGui::End();
 	}
+	ImGui::End();
 }
 
 std::map<std::string, video> &video_manager::get_videos() {
