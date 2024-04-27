@@ -126,4 +126,4 @@ bool utilities::load_project(video_manager& manager) {
 	return true;
 }
 
-// vim sw=4 ts=4 noet
+// vim: sw=4 ts=4 noet
