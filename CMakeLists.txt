@@ -17,7 +17,12 @@ file(GLOB src_code CONFIGURE_DEPENDS "src/engine/*.cpp" "include/engine/*.h" "sr
 file(GLOB ext_code CONFIGURE_DEPENDS "libs/imgui/*.cpp")
 
 add_subdirectory(libs/glad)
-add_subdirectory(libs/FFmpeg)
+
+if(WIN32)
+    find_package(FFMPEG REQUIRED)
+else()
+    add_subdirectory(libs/FFmpeg)
+endif()
 
 include_directories(
         libs/glad/
@@ -39,11 +44,22 @@ add_executable(${PROJECT_NAME}
         include/stb/stb_image.h
 )
 
-target_link_libraries(${PROJECT_NAME}
+if(WIN32)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${FFMPEG_INCLUDE_DIRS})
+    target_link_directories(${PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARY_DIRS})
+    target_link_libraries(${PROJECT_NAME}
+            glad
+            glfw
+            ${FFMPEG_LIBRARIES}
+            ${GLFW_LIBRARIES}
+    )
+else()
+    target_link_libraries(${PROJECT_NAME}
         glad
         glfw
         FFmpeg
         ${GLFW_LIBRARIES}
 )
+endif()
 
 file(COPY extras DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

@@ -4,18 +4,20 @@
 #include "utilities/file_management.h"
 
 bool utilities::save_project(video_manager& manager) {
+#ifndef _WIN32
+
 	char filename[1024];
 	FILE *f = popen("zenity --file-selection --save --title=\"Save project\"", "r");
 	fgets(filename, 1024, f);
 
-	if(std::strlen(filename) == 0) {
+	if (std::strlen(filename) == 0) {
 		return false;
 	}
 
 	json j;
 	json video_array = json::array();
 
-	for(const auto& vid_pair : manager.get_videos()) {
+	for (const auto& vid_pair : manager.get_videos()) {
 		video_array.push_back(vid_pair.second.to_json());
 	}
 
@@ -25,10 +27,14 @@ bool utilities::save_project(video_manager& manager) {
 	project_file << j.dump() << "\n";
 	project_file.close();
 
+#endif // !_WIN32
 	return true;
 }
 
 bool utilities::load_project(video_manager& manager) {
+
+#ifndef _WIN32
+
 	char filename[1024];
 	FILE *f = popen(R"(zenity --file-selection --title="Open project")", "r");
 	fgets(filename, 1024, f);
@@ -53,6 +59,8 @@ bool utilities::load_project(video_manager& manager) {
 	}
 
 	project_file.close();
+
+#endif // !_WIN32
 
 	return true;
 }

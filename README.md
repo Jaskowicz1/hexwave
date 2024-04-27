@@ -16,7 +16,7 @@
 
 *Note: Unix based platforms other than Mac OSX have not been tested. Hexwave may not work on those platforms.*
 
-Download the git repo (via `git clone` or downloading as a zip) and put it somewhere! From there, run `cmake -B build` in the folder and then `cmake --build build -j4`.****
+Download the git repo (via `git clone` or downloading as a zip) and put it somewhere! From there, run `cmake -B build` in the folder and then `cmake --build build -j4`.
 
 #### Mac OSX
 
@@ -28,7 +28,11 @@ This is subject to change.
 
 *Note: Whilst MinGW may be supported by the other libraries used, we do not directly support it and will not offer support for it. If it works for you, great! However, we will not be directly supporting that as it has far too many issues. You should either use MSVC or clang-cl.*
 
-Coming soon...
+Download VCPKG and install FFmpeg with `vcpkg install ffmpeg`. This may take a while.
+
+Download the git repo, From there, open the project with Visual Studio and let it initialise. Then hit `Build -> Build All`.
+
+Once Hexwave has finished building, you'll have a `Hexwave.exe` in `out/build/x64-Debug`, run that and there you go!
 
 ## Dependencies
 
