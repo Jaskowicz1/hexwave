@@ -373,9 +373,9 @@ void window::window_loop() {
 
 						manager.current_video.name = "";
 
-						std::cout << "attempting to play: " << opt.second.video_id << "\n";
+						//std::cout << "attempting to play: " << opt.second.video_id << "\n";
 						video vid = manager.get_videos().at(opt.second.video_id);
-						std::cout << "video name: " << vid.name << "\n";
+						//std::cout << "video name: " << vid.name << "\n";
 						if (!manager.open_video(&vid_reader, vid)) {
 							std::cout << "Failed to read frame data." << "\n";
 							break;
