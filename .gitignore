@@ -19,3 +19,6 @@ testing
 
 # Apple stuff.
 .DS_Store
+
+# clangd cache folder
+.cache/
