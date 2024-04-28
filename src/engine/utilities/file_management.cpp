@@ -16,7 +16,7 @@ bool utilities::save_project(video_manager& manager) {
 
 #ifndef _WIN32 // !_WIN32
 
-	FILE *f = popen("zenity --file-selection --save --title=\"Save project\" --file-filter=*.hexw", "r");
+	FILE* f = popen(R"(zenity --file-selection --save --title="Save project" --file-filter=*.hexw)", "r");
 
 	// Might be possible to just not use fgets, should look into this.
 	// Will be true if we failed to gather the data from the file.
@@ -74,7 +74,7 @@ bool utilities::load_project(video_manager& manager) {
 
 #ifndef _WIN32 // !_WIN32
 
-	FILE *f = popen(R"(zenity --file-selection --title="Open project" --file-filter=*.hexw)", "r");
+	FILE* f = popen(R"(zenity --file-selection --title="Open project" --file-filter=*.hexw)", "r");
 
 	// Might be possible to just not use fgets, should look into this.
 	// Will be true if fgets is nullptr (invalid).

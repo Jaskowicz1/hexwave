@@ -60,8 +60,8 @@ window::window() {
 	glGenTextures(1, &video_texture);
 	glBindTexture(GL_TEXTURE_2D, video_texture);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -140,33 +140,73 @@ void window::window_loop() {
 
 	bool started_audio = false;
 
+	int window_width{0};
+	int window_height{0};
+
+	int prev_window_width{ 0 };
+	int prev_window_height{ 0 };
+
 	while (!glfwWindowShouldClose(glfw_window)) {
+
+		static bool resize_required{ false };
+
+		static bool first_frame{ true };
+		static bool show_choices{ false };
 
 		//const auto& render_start = std::chrono::high_resolution_clock::now();
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Set up orphographic projection
-		int window_width, window_height;
 		glfwGetWindowSize(glfw_window, &window_width, &window_height);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho(0, window_width, window_height, 0, -1, 1);
 		glMatrixMode(GL_MODELVIEW);
 
-		static bool first_frame = true;
+		if (prev_window_width == 0 || prev_window_height == 0) {
+			prev_window_width = window_width;
+			prev_window_height = window_height;
+		}
+		else {
+			if (prev_window_width != window_width || prev_window_height != window_height) {
+				prev_window_width = window_width;
+				prev_window_height = window_height;
+				resize_required = true;
+			}
+		}
 
-		static bool show_choices{ false };
+		if (!manager.current_video.name.empty()) {
 
-		if(!manager.current_video.name.empty()) {
-
-			if(first_frame) {
+			if (first_frame) {
 				frame_width = vid_reader.width;
 				frame_height = vid_reader.height;
 
 				frame_data = new uint8_t[frame_width * frame_height * 4];
 
 				first_frame = false;
+			} else {
+				// NEVER attempt to call resize on first frame, it will already allocate correctly.
+				if (resize_required) {
+					// We need to free the scaler context as it'll be scaling to the old resolution.
+					sws_freeContext(vid_reader.sws_scaler_ctx);
+					vid_reader.sws_scaler_ctx = nullptr;
+
+					// Force frame_data to reallocate as screen size has changed.
+					if (frame_data) {
+						delete[] frame_data;
+						frame_data = nullptr;
+					}
+
+					// Reallocate frame data next frame.
+					// NOTE: This will cause FFmpeg to send a warning about a bad pointer, ignore it, it'll fix next frame.
+					first_frame = true;
+
+					// Tell OpenGL the new Viewport size.
+					glViewport(0, 0, window_width, window_height);
+
+					resize_required = false;
+				}
 			}
 
 			int64_t pts;
@@ -263,10 +303,12 @@ void window::window_loop() {
 		glBindTexture(GL_TEXTURE_2D, video_texture);
 		// Mac OSX doesn't support this. Why? Who knows.
 		glBegin(GL_QUADS);
-		glTexCoord2d(0, 0); glVertex2i(0, 0);
-		glTexCoord2d(1, 0); glVertex2i(frame_width, 0);
-		glTexCoord2d(1, 1); glVertex2i(frame_width, frame_height);
-		glTexCoord2d(0, 1); glVertex2i(0, frame_height);
+		{
+			glTexCoord2d(0, 0); glVertex2i(0, 0);
+			glTexCoord2d(1, 0); glVertex2i(frame_width, 0);
+			glTexCoord2d(1, 1); glVertex2i(frame_width, frame_height);
+			glTexCoord2d(0, 1); glVertex2i(0, frame_height);
+		}
 		glEnd();
 		glDisable(GL_TEXTURE_2D);
 
