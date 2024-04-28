@@ -49,6 +49,11 @@ bool utilities::save_project(video_manager& manager) {
 		return false;
 	}
 
+	auto len = std::strlen(filename);
+	if (len > 0 && filename[len - 1] == '\n') {
+		filename[len - 1] = 0;
+	}
+
 	json j;
 	json video_array = json::array();
 
@@ -58,9 +63,9 @@ bool utilities::save_project(video_manager& manager) {
 
 	j["videos"] = video_array;
 
+	// will auto close on deconstructor
 	std::ofstream project_file(filename);
 	project_file << j.dump() << "\n";
-	project_file.close();
 
 	return true;
 }
@@ -107,9 +112,14 @@ bool utilities::load_project(video_manager& manager) {
 		return false;
 	}
 
+	auto len = std::strlen(filename);
+	if (len > 0 && filename[len - 1] == '\n') {
+		filename[len - 1] = 0;
+	}
+
 	std::ifstream project_file(filename);
 
-	if (project_file.bad()) {
+	if (!project_file.good()) {
 		/* 
 		 * We should ideally change the return value of file_management with an enum of the result,
 		 * meaning we can accurately say the reason for a failure.
@@ -133,12 +143,10 @@ bool utilities::load_project(video_manager& manager) {
 			}
 		}
 	}
-	catch (json::parse_error& exception) {
-		project_file.close();
+	catch (const json::parse_error& exception) {
+		std::cout << exception.what() << "\n";
 		return false;
 	}
-
-	project_file.close();
 
 	return true;
 }
