@@ -331,7 +331,9 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 
 			state->video_stream_index = i;
 			state->width = av_codec_video_params->width;
+			state->init_width = av_codec_video_params->width;
 			state->height = av_codec_video_params->height;
+			state->init_height = av_codec_video_params->height;
 			state->time_base = state->av_format_ctx->streams[i]->time_base;
 		} else if (state->av_format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
 			av_codec_audio_params = state->av_format_ctx->streams[i]->codecpar;
@@ -487,7 +489,7 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 			temp_frame->format = AV_SAMPLE_FMT_FLT;
 
 			response = swr_convert_frame(state->swr_resampler_ctx, temp_frame, state->av_audio_frame);
-			//av_frame_unref(state->av_audio_frame);
+			av_frame_unref(state->av_audio_frame);
 			av_audio_fifo_write(state->av_audio_fifo, (void**)temp_frame->data, temp_frame->nb_samples);
 			av_frame_free(&temp_frame);
 
@@ -531,8 +533,9 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 	}
 
 	uint8_t* dest[4] = { frame_buffer, NULL, NULL, NULL };
+	std::cout << "WIDTH BE LIKE: " << state->width << "\n";
 	int dest_linesize[4] = { state->width * 4, 0, 0, 0 };
-	sws_scale(state->sws_scaler_ctx, state->av_frame->data, state->av_frame->linesize, 0, state->av_frame->height, dest, dest_linesize);
+	sws_scale(state->sws_scaler_ctx, state->av_frame->data, state->av_frame->linesize, 0, state->height, dest, dest_linesize);
 
 	return true;
 }

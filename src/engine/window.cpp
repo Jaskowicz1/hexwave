@@ -57,6 +57,20 @@ window::window() {
 	glfwSetWindowIcon(glfw_window, 1, images);
 	stbi_image_free(images[0].pixels);
 
+	/*
+	glfwSetKeyCallback(glfw_window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+		if (action == GLFW_PRESS) {
+			if (key == GLFW_KEY_F11) {
+				glfw_window
+				glfwSetWindowSize(glfw_window, desktopWidth, desktopHeight);
+			}
+		}
+		return;
+	});
+	*/
+
+	//  glfwSetWindowMonitor
+
 	glGenTextures(1, &video_texture);
 	glBindTexture(GL_TEXTURE_2D, video_texture);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -204,6 +218,20 @@ void window::window_loop() {
 
 					// Tell OpenGL the new Viewport size.
 					glViewport(0, 0, window_width, window_height);
+
+					if (vid_reader.width < window_width) {
+						vid_reader.width = window_width;
+					}
+					else {
+						vid_reader.width = vid_reader.init_width;
+					}
+
+					if (vid_reader.height < window_height) {
+						vid_reader.height = window_height;
+					}
+					else {
+						vid_reader.height = vid_reader.init_height;
+					}
 
 					resize_required = false;
 				}
@@ -473,4 +501,4 @@ void window::window_loop() {
 
 void window::close_window() {
 	glfwSetWindowShouldClose(glfw_window, true);
-};
+}

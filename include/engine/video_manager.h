@@ -21,6 +21,9 @@ struct video_reader {
 	int width{0};
 	int height{0};
 
+	int init_width{ 0 };
+	int init_height{ 0 };
+
 	int video_stream_index{-1};
 	int audio_stream_index{-1};
 
