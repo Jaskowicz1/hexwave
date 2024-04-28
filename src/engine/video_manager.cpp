@@ -1,8 +1,13 @@
 #include <iostream>
+#include <fstream>
 #include "video_manager.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ImGuiNotify.hpp"
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #if LIBAVFORMAT_VERSION_MAJOR < 59
 	#ifndef FFMPEG_LEGACY
@@ -119,6 +124,15 @@ void video_manager::render_window(video_reader& reader) {
 									}
 								}
 							}
+
+							std::string opts_show("Options always show? " + std::string(vid.always_show_options ? "True" : "False"));
+							ImGui::Text("%s", opts_show.c_str());
+
+							std::string opts_show_at("Options show at: " + std::to_string(vid.options_show_at));
+							ImGui::Text("%s", opts_show_at.c_str());
+
+							std::string opts_hide_at("Options hide at: " + std::to_string(vid.options_hide_at));
+							ImGui::Text("%s", opts_hide_at.c_str());
 						} else {
 							ImGui::Text("There are no options!");
 						}
@@ -209,8 +223,65 @@ void video_manager::render_window(video_reader& reader) {
 			static int options_hide_at{ 0 };
 			ImGui::InputInt("Options Hide At: ", &options_hide_at);
 
-			static char path[512];
+			static char path[1024];
 			ImGui::InputText("Video Path", path, IM_ARRAYSIZE(path));
+			ImGui::SameLine();
+
+			if (ImGui::Button(std::string("Select Video").c_str())) {
+
+				// This entire section of code below to do with selecting a video should REALLY be a static class under file_management.
+				// This is kinda poor tbh.
+
+				char temp_path[1024];
+
+				// Linux only, will ALWAYS be false on Windows.
+				bool file_fail{ false };
+
+				#ifndef _WIN32 // !_WIN32
+
+				FILE* f = popen(R"(zenity --file-selection --title="Open project" --file-filter=*.*)", "r");
+
+				// Might be possible to just not use fgets, should look into this.
+				// Will be true if fgets is nullptr (invalid).
+				file_fail = (fgets(temp_path, 1024, f) == nullptr);
+
+				pclose(f);
+				f = nullptr;
+
+				#else // _WIN32
+
+				OPENFILENAME ofn{};
+
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = NULL;
+				ofn.lpstrFile = temp_path;
+				ofn.lpstrFile[0] = '\0';
+				ofn.nMaxFile = sizeof(temp_path);
+				ofn.lpstrFilter = "MP4\0*.mp4\0MOV\0*.mov\0WMV\0*.wmv\0AVI\0*.avi\0MKV\0*.mkv\0WEBM\0*.webm\0All\0*.*\0";
+				ofn.nFilterIndex = 1;
+				ofn.lpstrFileTitle = NULL;
+				ofn.nMaxFileTitle = 0;
+				ofn.lpstrInitialDir = NULL;
+				ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+				GetOpenFileName(&ofn);
+
+				#endif
+
+				if (!file_fail && std::strlen(temp_path) != 0) {
+					auto len = std::strlen(temp_path);
+					if (len > 0 && temp_path[len - 1] == '\n') {
+						temp_path[len - 1] = 0;
+					}
+
+					std::ifstream video_file(temp_path);
+
+					if (video_file.good()) {
+						// Copy temp path to path if the path was valid.
+						memcpy(path, temp_path, sizeof(temp_path));
+					}
+				}
+			}
 
 			if (ImGui::Button("Add")) {
 				if(strlen(id) != 0 && strlen(name) != 0 && strlen(linked_id) != 0 && strlen(path) != 0) {

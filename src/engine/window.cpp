@@ -88,9 +88,10 @@ window::window() {
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.IniFilename = nullptr;
 
 	ImGui_ImplGlfw_InitForOpenGL(glfw_window, true);
-	ImGui_ImplOpenGL3_Init("#version 450 core");
+	ImGui_ImplOpenGL3_Init("#version 410 core");
 
 	ImGui::StyleColorsDark();
 
