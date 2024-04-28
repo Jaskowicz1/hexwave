@@ -11,21 +11,24 @@ bool utilities::save_project(video_manager& manager) {
 
 	char filename[1024];
 
+	// Linux only, will ALWAYS be false on Windows.
+	bool file_fail{ false };
+
 #ifndef _WIN32 // !_WIN32
 
 	FILE *f = popen("zenity --file-selection --save --title=\"Save project\" --file-filter=*.hexw", "r");
-	if (fgets(filename, 1024, f) == nullptr) {
-		return false;
-	}
+
+	// Might be possible to just not use fgets, should look into this.
+	// Will be true if we failed to gather the data from the file.
+	file_fail = (fgets(filename, 1024, f) == nullptr);
 
 	pclose(f);
 	f = nullptr;
 
 #else // _WIN32
 
-	OPENFILENAME ofn;
+	OPENFILENAME ofn{};
 
-	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = NULL;
 	ofn.lpstrFile = filename;
@@ -42,7 +45,7 @@ bool utilities::save_project(video_manager& manager) {
 
 #endif
 
-	if (std::strlen(filename) == 0) {
+	if (file_fail || std::strlen(filename) == 0) {
 		return false;
 	}
 
@@ -66,12 +69,16 @@ bool utilities::load_project(video_manager& manager) {
 
 	char filename[1024];
 
+	// Linux only, will ALWAYS be false on Windows.
+	bool file_fail{ false };
+
 #ifndef _WIN32 // !_WIN32
 
 	FILE *f = popen(R"(zenity --file-selection --title="Open project" --file-filter=*.hexw)", "r");
-	if (fgets(filename, 1024, f) == nullptr) {
-		return false;
-	}
+
+	// Might be possible to just not use fgets, should look into this.
+	// Will be true if fgets is nullptr (invalid).
+	file_fail = (fgets(filename, 1024, f) == nullptr);
 
 	pclose(f);
 	f = nullptr;
@@ -96,21 +103,26 @@ bool utilities::load_project(video_manager& manager) {
 
 #endif
 
-	if (std::strlen(filename) == 0) {
+	if (file_fail || std::strlen(filename) == 0) {
 		return false;
 	}
-
-	manager.remove_all_videos();
 
 	std::ifstream project_file(filename);
 
 	if (project_file.bad()) {
+		/* 
+		 * We should ideally change the return value of file_management with an enum of the result,
+		 * meaning we can accurately say the reason for a failure.
+		 */
 		std::cout << "Failed to open file." << "\n";
 		return false;
 	}
 
 	try {
 		json j = json::parse(project_file);
+
+		// Clear videos if parse succeeded.
+		manager.remove_all_videos();
 
 		for (const auto& vid : j["videos"]) {
 			manager.add_video(vid);
