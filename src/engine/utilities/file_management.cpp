@@ -101,7 +101,11 @@ std::string utilities::get_file_from_prompt(const bool is_save, const std::strin
 	ofn.lpstrInitialDir = nullptr;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-	GetOpenFileName(&ofn);
+	if(is_save) {
+		GetSaveFileName(&ofn);
+	} else {
+		GetOpenFileName(&ofn);
+	}
 
 #endif
 
