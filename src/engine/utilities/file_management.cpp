@@ -6,7 +6,7 @@
 
 bool utilities::save_project(video_manager& manager) {
 
-	std::string filename{get_file_from_prompt(true, "Save Project", { {"Hexwave Project", "*.hexw"} })};
+	std::string filename{get_file_from_prompt(true, "Save Project", "*.hexw", "Hexwave Project\0*.hexw\0")};
 
 	if(filename.empty()) {
 		return false;
@@ -30,7 +30,7 @@ bool utilities::save_project(video_manager& manager) {
 
 bool utilities::load_project(video_manager& manager) {
 
-	std::string filename{get_file_from_prompt(false, "Open Project", { {"Hexwave Project", "*.hexw"} })};
+	std::string filename{get_file_from_prompt(false, "Open Project", "*.hexw", "Hexwave Project\0*.hexw\0")};
 
 	if(filename.empty()) {
 		return false;
@@ -71,20 +71,12 @@ bool utilities::load_project(video_manager& manager) {
 }
 
 std::string utilities::get_file_from_prompt(const bool is_save, const std::string& title,
-					    const std::vector<std::pair<std::string_view, std::string_view>> &filters) {
+					    const std::string& linux_filters, const char* windows_filters) {
 	char filename[1024];
 
 #ifndef _WIN32 // !_WIN32
 
-	std::string filter{};
-
-	// Linux only needs the file type.
-	for(const auto& filt : filters) {
-		filter.append(filt.second);
-		filter.append("\0");
-	}
-
-	std::string clause("zenity --file-selection" + std::string(is_save ? " --save" : "") + " --title=" + title + " --file-filter='" + filter + "'");
+	std::string clause("zenity --file-selection" + std::string(is_save ? " --save" : "") + " --title=" + title + " --file-filter='" + linux_filters + "'");
 
 	linux_file f{popen(clause.c_str(), "r")};
 
@@ -96,18 +88,6 @@ std::string utilities::get_file_from_prompt(const bool is_save, const std::strin
 
 #else // _WIN32
 
-	std::string filter{};
-
-	// Windows requires both title and file type.
-	for(const auto& filt : filters) {
-		filter.append(filt.first);
-		filter.append("\0");
-		filter.append(filt.second);
-		filter.append("\0");
-	}
-
-	filter.append("All\0*.*\0");
-
 	OPENFILENAME ofn{};
 
 	ofn.lStructSize = sizeof(ofn);
@@ -115,7 +95,7 @@ std::string utilities::get_file_from_prompt(const bool is_save, const std::strin
 	ofn.lpstrFile = filename;
 	ofn.lpstrFile[0] = '\0';
 	ofn.nMaxFile = sizeof(filename);
-	ofn.lpstrFilter = filter.c_str();
+	ofn.lpstrFilter = windows_filters;
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFileTitle = nullptr;
 	ofn.nMaxFileTitle = 0;

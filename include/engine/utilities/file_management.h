@@ -50,5 +50,5 @@ bool load_project(video_manager& manager);
  *
  * @return
  */
-std::string get_file_from_prompt(const bool is_save, const std::string& title, const std::vector<std::pair<std::string_view, std::string_view>>& filters = {});
+std::string get_file_from_prompt(const bool is_save, const std::string& title, const std::string& linux_filters, const char* windows_filters);
 }
