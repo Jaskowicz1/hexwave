@@ -53,19 +53,15 @@ void video_manager::add_option(video& vid, const std::string_view id, const std:
 	vid.options.emplace(id, opt);
 }
 
-static void testing() {
-	ImGui::OpenPopup("add_video_popup");
-}
-
 
 void video_manager::render_window(video_reader& reader) {
 	if(ImGui::Begin("Videos")) {
 		if (ImGui::Button("Add Video")) {
-			testing();
+			ImGui::OpenPopup("add_video_popup");
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Remove ALL Videos")) {
-			//remove_all_videos();
+			remove_all_videos();
 		}
 
 		static std::string vid_id_interacting_with;
@@ -236,7 +232,7 @@ void video_manager::render_window(video_reader& reader) {
 				if (video_file.good()) {
 					const char* temp_path = video_path.c_str();
 					// Copy temp path to path if the path was valid.
-					std::memcpy(path, temp_path, sizeof(temp_path));
+					std::memcpy(path, temp_path, std::strlen(temp_path));
 				} else {
 					ImGui::InsertNotification({ ImGuiToastType::Error, 3000, "Failed to open video file, please make sure it's a valid video!" });
 				}
@@ -565,7 +561,6 @@ bool video_manager::read_video_frame(GLFWwindow* window, video_reader* state, ui
 	}
 
 	uint8_t* dest[4] = { frame_buffer, NULL, NULL, NULL };
-	std::cout << "WIDTH BE LIKE: " << state->width << "\n";
 	int dest_linesize[4] = { state->width * 4, 0, 0, 0 };
 	sws_scale(state->sws_scaler_ctx, state->av_frame->data, state->av_frame->linesize, 0, state->height, dest, dest_linesize);
 

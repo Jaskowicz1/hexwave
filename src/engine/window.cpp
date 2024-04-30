@@ -59,7 +59,7 @@ window::window() {
 
 
 	glfwSetKeyCallback(glfw_window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-		std::cout << "key pressed: " << key << "\n";
+		//std::cout << "key pressed: " << key << "\n";
 		/*
 		if (action == GLFW_PRESS) {
 			if (key == GLFW_KEY_F11) {
@@ -175,7 +175,7 @@ void window::window_loop() {
 			int count;
 			const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
 
-			std::cout << "controller funnies: " << axes[0] << "\n";
+			//std::cout << "controller funnies: " << axes[0] << "\n";
 		}
 
 		//const auto& render_start = std::chrono::high_resolution_clock::now();
