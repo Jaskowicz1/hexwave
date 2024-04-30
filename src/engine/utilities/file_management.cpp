@@ -1,11 +1,12 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <set>
 #include "utilities/file_management.h"
 
 bool utilities::save_project(video_manager& manager) {
 
-	std::string filename{get_file_from_prompt(true, "Save Project", {})};
+	std::string filename{get_file_from_prompt(true, "Save Project", { {"Hexwave Project", "*.hexw"} })};
 
 	if(filename.empty()) {
 		return false;
@@ -29,7 +30,7 @@ bool utilities::save_project(video_manager& manager) {
 
 bool utilities::load_project(video_manager& manager) {
 
-	std::string filename{get_file_from_prompt(false, "Open Project", {})};
+	std::string filename{get_file_from_prompt(false, "Open Project", { {"Hexwave Project", "*.hexw"} })};
 
 	if(filename.empty()) {
 		return false;
@@ -69,13 +70,21 @@ bool utilities::load_project(video_manager& manager) {
 	return true;
 }
 
-std::string utilities::get_file_from_prompt(const bool is_save, const std::string_view title,
-					    const std::vector<std::string_view> &filters) {
+std::string utilities::get_file_from_prompt(const bool is_save, const std::string& title,
+					    const std::vector<std::pair<std::string_view, std::string_view>> &filters) {
 	char filename[1024];
 
 #ifndef _WIN32 // !_WIN32
 
-	std::string clause("zenity --file-selection" + std::string(is_save ? " --save" : "") + " --title=" + title + " --file-filter=*.hexw");
+	std::string filter{};
+
+	// Linux only needs the file type.
+	for(const auto& filt : filters) {
+		filter.append(filt.second);
+		filter.append("\0");
+	}
+
+	std::string clause("zenity --file-selection" + std::string(is_save ? " --save" : "") + " --title=" + title + " --file-filter='" + filter + "'");
 
 	linux_file f{popen(clause.c_str(), "r")};
 
@@ -87,6 +96,18 @@ std::string utilities::get_file_from_prompt(const bool is_save, const std::strin
 
 #else // _WIN32
 
+	std::string filter{};
+
+	// Windows requires both title and file type.
+	for(const auto& filt : filters) {
+		filter.append(filt.first);
+		filter.append("\0");
+		filter.append(filt.second);
+		filter.append("\0");
+	}
+
+	filter.append("All\0*.*\0");
+
 	OPENFILENAME ofn{};
 
 	ofn.lStructSize = sizeof(ofn);
@@ -94,11 +115,12 @@ std::string utilities::get_file_from_prompt(const bool is_save, const std::strin
 	ofn.lpstrFile = filename;
 	ofn.lpstrFile[0] = '\0';
 	ofn.nMaxFile = sizeof(filename);
-	ofn.lpstrFilter = "Hexwave Project\0*.hexw\0All\0*.*\0";
+	ofn.lpstrFilter = filter.c_str();
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFileTitle = nullptr;
 	ofn.nMaxFileTitle = 0;
 	ofn.lpstrInitialDir = nullptr;
+	ofn.lpstrTitle = std::string(title).c_str();
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
 	if(is_save) {

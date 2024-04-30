@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "video_manager.h"
+#include "utilities/file_management.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ImGuiNotify.hpp"
@@ -229,57 +230,16 @@ void video_manager::render_window(video_reader& reader) {
 
 			if (ImGui::Button(std::string("Select Video").c_str())) {
 
-				// This entire section of code below to do with selecting a video should REALLY be a static class under file_management.
-				// This is kinda poor tbh.
+				std::string video_path{utilities::get_file_from_prompt(false, "Open Video File", { {"MP4", "*.mp4"}, {"MOV", "*.mov"}, {"WMV", "*.wmv"}, {"AVI", "*.avi"}, {"MKV", "*.mkv"}, {"WEBM", "*.webm"} })};
 
-				char temp_path[1024];
+				std::ifstream video_file(video_path);
 
-				// Linux only, will ALWAYS be false on Windows.
-				bool file_fail{ false };
-
-				#ifndef _WIN32 // !_WIN32
-
-				FILE* f = popen(R"(zenity --file-selection --title="Open project" --file-filter=*.*)", "r");
-
-				// Might be possible to just not use fgets, should look into this.
-				// Will be true if fgets is nullptr (invalid).
-				file_fail = (fgets(temp_path, 1024, f) == nullptr);
-
-				pclose(f);
-				f = nullptr;
-
-				#else // _WIN32
-
-				OPENFILENAME ofn{};
-
-				ofn.lStructSize = sizeof(ofn);
-				ofn.hwndOwner = NULL;
-				ofn.lpstrFile = temp_path;
-				ofn.lpstrFile[0] = '\0';
-				ofn.nMaxFile = sizeof(temp_path);
-				ofn.lpstrFilter = "MP4\0*.mp4\0MOV\0*.mov\0WMV\0*.wmv\0AVI\0*.avi\0MKV\0*.mkv\0WEBM\0*.webm\0All\0*.*\0";
-				ofn.nFilterIndex = 1;
-				ofn.lpstrFileTitle = NULL;
-				ofn.nMaxFileTitle = 0;
-				ofn.lpstrInitialDir = NULL;
-				ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-
-				GetOpenFileName(&ofn);
-
-				#endif
-
-				if (!file_fail && std::strlen(temp_path) != 0) {
-					auto len = std::strlen(temp_path);
-					if (len > 0 && temp_path[len - 1] == '\n') {
-						temp_path[len - 1] = 0;
-					}
-
-					std::ifstream video_file(temp_path);
-
-					if (video_file.good()) {
-						// Copy temp path to path if the path was valid.
-						memcpy(path, temp_path, sizeof(temp_path));
-					}
+				if (video_file.good()) {
+					const char* temp_path = video_path.c_str();
+					// Copy temp path to path if the path was valid.
+					std::memcpy(path, temp_path, sizeof(temp_path));
+				} else {
+					ImGui::InsertNotification({ ImGuiToastType::Error, 3000, "Failed to open video file, please make sure it's a valid video!" });
 				}
 			}
 
@@ -297,6 +257,8 @@ void video_manager::render_window(video_reader& reader) {
 					} else {
 						ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Invalid path! Check the path of the video and make sure it's the right file type!"});
 					}
+				} else {
+					ImGui::InsertNotification({ ImGuiToastType::Error, 3000, "Failed to add video! Ensure that ID, name, linked_id, and path, are not empty!" });
 				}
 			}
 
