@@ -225,7 +225,7 @@ void video_manager::render_window(video_reader& reader) {
 			ImGui::SameLine();
 
 			if (ImGui::Button(std::string("Select Video").c_str())) {
-				std::string video_path{utilities::get_file_from_prompt(false, "Open Video File", "*.mp4 | *.mov | *.wmv | *.avi | *.mkv | *.webm | *.*", "MP4\0*.mp4\0MOV\0*.mov\0WMV\0*.wmv\0AVI\0*.avi\0MKV\0*.mkv\0WEBM\0*.webm\0All\0*.*\0")};
+				std::string video_path{utilities::get_file_from_prompt(false, "Open Video File", "Video Files | *.mp4 *.mov *.wmv *.avi *.mkv *.webm", "MP4\0*.mp4\0MOV\0*.mov\0WMV\0*.wmv\0AVI\0*.avi\0MKV\0*.mkv\0WEBM\0*.webm\0All\0*.*\0")};
 
 				std::ifstream video_file(video_path);
 

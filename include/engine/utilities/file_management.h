@@ -8,6 +8,8 @@
 
 namespace utilities {
 
+constexpr std::string_view hexwave_project_ext = ".hexw";
+
 #ifndef WIN32
 /**
  * @brief Linux File Reader.

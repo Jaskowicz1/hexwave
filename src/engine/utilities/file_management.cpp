@@ -6,10 +6,15 @@
 
 bool utilities::save_project(video_manager& manager) {
 
-	std::string filename{get_file_from_prompt(true, "Save Project", "*.hexw", "Hexwave Project\0*.hexw\0")};
+	std::string filename{get_file_from_prompt(true, "Save Project", "Hexwave Project | *.hexw", "Hexwave Project\0*.hexw\0")};
 
 	if(filename.empty()) {
 		return false;
+	}
+
+	// Does filename NOT end in ".hexw"?
+	if(filename.compare(filename.size() - hexwave_project_ext.size(), hexwave_project_ext.size(), hexwave_project_ext) != 0) {
+		filename.append(hexwave_project_ext);
 	}
 
 	json j;
@@ -30,7 +35,7 @@ bool utilities::save_project(video_manager& manager) {
 
 bool utilities::load_project(video_manager& manager) {
 
-	std::string filename{get_file_from_prompt(false, "Open Project", "*.hexw", "Hexwave Project\0*.hexw\0")};
+	std::string filename{get_file_from_prompt(false, "Open Project", "Hexwave Project | *.hexw", "Hexwave Project\0*.hexw\0")};
 
 	if(filename.empty()) {
 		return false;
@@ -76,7 +81,7 @@ std::string utilities::get_file_from_prompt(const bool is_save, const std::strin
 
 #ifndef _WIN32 // !_WIN32
 
-	std::string clause("zenity --file-selection" + std::string(is_save ? " --save" : "") + " --title=" + title + " --file-filter='" + linux_filters + "'");
+	std::string clause("zenity --file-selection" + std::string(is_save ? " --save" : "") + " --title=" + title + " --file-filter='" + linux_filters + "' --file-filter='All | *.*'");
 
 	linux_file f{popen(clause.c_str(), "r")};
 
