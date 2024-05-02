@@ -57,17 +57,20 @@ window::window() {
 	glfwSetWindowIcon(glfw_window, 1, images);
 	stbi_image_free(images[0].pixels);
 
-	/*
+
 	glfwSetKeyCallback(glfw_window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+		//std::cout << "key pressed: " << key << "\n";
+		/*
 		if (action == GLFW_PRESS) {
 			if (key == GLFW_KEY_F11) {
 				glfw_window
 				glfwSetWindowSize(glfw_window, desktopWidth, desktopHeight);
 			}
 		}
+		 */
 		return;
 	});
-	*/
+
 
 	//  glfwSetWindowMonitor
 
@@ -167,6 +170,13 @@ void window::window_loop() {
 
 		static bool first_frame{ true };
 		static bool show_choices{ false };
+
+		if(glfwJoystickPresent(GLFW_JOYSTICK_1) == GLFW_TRUE) {
+			int count;
+			const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
+
+			//std::cout << "controller funnies: " << axes[0] << "\n";
+		}
 
 		//const auto& render_start = std::chrono::high_resolution_clock::now();
 
