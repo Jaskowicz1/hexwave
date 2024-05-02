@@ -14,6 +14,7 @@ bool utilities::save_project(video_manager& manager) {
 
 	// Does filename NOT end in ".hexw"?
 	if(filename.compare(filename.size() - hexwave_project_ext.size(), hexwave_project_ext.size(), hexwave_project_ext) != 0) {
+		// because file doesn't end in ".hexw", we need to add ".hexw" to it to ensure all files end in that.
 		filename.append(hexwave_project_ext);
 	}
 
