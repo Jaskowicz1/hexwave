@@ -440,7 +440,13 @@ void window::window_loop() {
 
 		if (show_choices) {
 			if (!manager.current_video.options.empty() && !first_frame) {
-				ImGui::Begin("Options Select", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
+
+				ImVec2 WindowPos(window_width/2, window_height - 40);
+				ImGui::SetNextWindowPos(WindowPos, ImGuiCond_None, ImVec2(0.5f, 0.5f));
+				// ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground (This is to prevent the window from having any looks)
+				// ImGuiWindowFlags_NoMove (Prevent moving it)
+				// ImGuiWindowFlags_AlwaysAutoResize (Auto resize)
+				ImGui::Begin("Options Select", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
 				for (const auto& opt : manager.current_video.options) {
 
 					// Pre-cautions
@@ -449,7 +455,7 @@ void window::window_loop() {
 					}
 
 					std::string option_text(opt.second.name);
-					if (ImGui::Button(option_text.c_str())) {
+					if (ImGui::Button(option_text.c_str(), ImVec2(300, 30))) {
 						first_frame = true;
 						delete[] frame_data;
 						frame_data = nullptr;
