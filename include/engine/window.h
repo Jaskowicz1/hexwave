@@ -29,6 +29,9 @@ private:
 
 	GLuint video_texture;
 
-	glm::vec2 vertices[4] = {{-1, -1}, {-1, 1}, {1, 1}, {1, -1}};
+	//glm::vec2 vertices[4] = {{-1, -1}, {-1, 1}, {1, 1}, {1, -1}};
+
+	GLuint shader_program;
+	GLuint video_texture_id;
 
 };

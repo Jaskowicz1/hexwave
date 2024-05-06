@@ -22,6 +22,38 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio/miniaudio.h"
 
+const char *vertex_shader = R"(
+#version 410
+
+layout (location = 0) in vec3 pos;
+layout (location = 1) in vec2 texcoord;
+
+out vec2 texture_coordinates;
+
+void main() {
+	gl_Position = vec4(pos, 1, 1);
+	texture_coordinates = texcoord;
+}
+
+)";
+
+// outColor = vec4(1, 0, 0, 1);
+
+const char *fragment_shader = R"(
+#version 410
+
+out vec4 colour;
+
+in vec2 texture_coordinates;
+
+uniform sampler2D texture;
+
+void main() {
+    colour = texture2D(texture, texture_coordinates);
+}
+
+)";
+
 void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
 	AVAudioFifo* fifo = reinterpret_cast<AVAudioFifo*>(pDevice->pUserData);
 	av_audio_fifo_read(fifo, &pOutput, frameCount);
@@ -38,6 +70,11 @@ window::window() {
 		std::cout << "glfw failed to initialise." << "\n";
 		exit(EXIT_FAILURE);
 	}
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	glfw_window = glfwCreateWindow(1280, 720, "Hexwave - 0.1", nullptr, nullptr);
 
@@ -74,14 +111,24 @@ window::window() {
 
 	//  glfwSetWindowMonitor
 
+	shader_program = glCreateProgram();
+
+	glActiveTexture(GL_TEXTURE0);
 	glGenTextures(1, &video_texture);
 	glBindTexture(GL_TEXTURE_2D, video_texture);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//GLuint TextureID = glGetUniformLocation(shader_program, "texture");
+	//glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	video_texture_id = glGetUniformLocation(shader_program, "texture");
+
+	/**
+	 * Compile shader
+	 */
 
 	/**
 	 * ImGUI stuff
@@ -163,6 +210,59 @@ void window::window_loop() {
 
 	int prev_window_width{ 0 };
 	int prev_window_height{ 0 };
+
+	// X, Y, Z
+	float points[] = {
+		-1.0f,  1.0f,  0.0f,
+		1.0f,   1.0f,  0.0f,
+		-1.0f, -1.0f,  0.0f,
+		// Second triangle
+		1.0f,   1.0f,  0.0f,
+		1.0f,  -1.0f,  0.0f,
+		-1.0f, -1.0f,  0.0f,
+	};
+
+	float texcoords[] = {
+		0.0f, 0.0f,
+		0.0f, 1.0f,
+		1.0, 0.0,
+		1.0, 1.0,
+		0.0, 1.0,
+		1.0, 0.0
+	};
+
+	GLuint vbo = 0;
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+
+	GLuint texbuffer = 0;
+	glGenBuffers(1, &texbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, texbuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(texcoords), texcoords, GL_STATIC_DRAW);
+
+	GLuint vao = 0;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, texbuffer);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vs, 1, &vertex_shader, NULL);
+	glCompileShader(vs);
+
+	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fs, 1, &fragment_shader, NULL);
+	glCompileShader(fs);
+
+	glAttachShader(shader_program, fs);
+	glAttachShader(shader_program, vs);
+	glLinkProgram(shader_program);
 
 	while (!glfwWindowShouldClose(glfw_window)) {
 
@@ -335,9 +435,13 @@ void window::window_loop() {
 			}
 		}
 
+
 		glBindTexture(GL_TEXTURE_2D, video_texture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_data);
 
+		//video_texture_id = glGetUniformLocation(shader_program, "texture");
+
+		/*
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, video_texture);
 		// Mac OSX doesn't support this. Why? Who knows.
@@ -350,6 +454,15 @@ void window::window_loop() {
 		}
 		glEnd();
 		glDisable(GL_TEXTURE_2D);
+		 */
+
+		glUseProgram(shader_program);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, video_texture);
+		glUniform1i(video_texture_id, 0);
+		glBindVertexArray(vao);
+		// draw points 0-3 from the currently bound VAO with current in-use shader
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		//const auto& render_finish = std::chrono::high_resolution_clock::now();
 
