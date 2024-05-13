@@ -396,6 +396,12 @@ void window::window_loop() {
 						selected_option = opt.first;
 					}
 
+					if(input_man->current_input_type == input::CONTROLLER) {
+						if(selected_option == opt.first) {
+							ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_ButtonHovered));
+						}
+					}
+
 					std::string option_text(opt.second.name);
 					if (ImGui::Button(option_text.c_str(), ImVec2(300, 30))) {
 						first_frame = true;
@@ -418,7 +424,13 @@ void window::window_loop() {
 						break;
 					}
 
-					if(input_man->current_input_type == input::Controller) {
+					if(input_man->current_input_type == input::CONTROLLER) {
+						if (selected_option == opt.first) {
+							ImGui::PopStyleColor();
+						}
+					}
+
+					if(input_man->current_input_type == input::CONTROLLER) {
 						if(selected_option == opt.first) {
 							ImGui::SetKeyboardFocusHere();
 						}

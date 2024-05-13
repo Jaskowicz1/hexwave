@@ -29,8 +29,8 @@ enum controller_inputs {
 };
 
 enum input_types {
-	KeyboardAndMouse = 0,
-	Controller = 1,
+	KEYBOARDANDMOUSE = 0,
+	CONTROLLER = 1,
 };
 
 class input_manager {
