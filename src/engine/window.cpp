@@ -57,20 +57,28 @@ window::window() {
 	glfwSetWindowIcon(glfw_window, 1, images);
 	stbi_image_free(images[0].pixels);
 
+	// Initialise Input Manager
+	input_man = std::make_unique<input::input_manager>(glfw_window);
 
-	glfwSetKeyCallback(glfw_window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-		//std::cout << "key pressed: " << key << "\n";
-		/*
-		if (action == GLFW_PRESS) {
-			if (key == GLFW_KEY_F11) {
-				glfw_window
-				glfwSetWindowSize(glfw_window, desktopWidth, desktopHeight);
+	input_man->on_keyboard_press = [this](int key) {
+		if(std::find(input_man->keys_held.begin(), input_man->keys_held.end(), GLFW_KEY_LEFT_CONTROL) != input_man->keys_held.end()) {
+			if(std::find(input_man->keys_held.begin(), input_man->keys_held.end(), GLFW_KEY_O) != input_man->keys_held.end()) {
+				bool loaded = utilities::load_project(manager);
+
+				if(loaded)
+					ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project loaded successfully!"});
+				else
+					ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to load project. Check the file is right and project isn't corrupted. If the problem persists, report this issue!"});
+			} else if(std::find(input_man->keys_held.begin(), input_man->keys_held.end(), GLFW_KEY_S) != input_man->keys_held.end()) {
+				bool saved = utilities::save_project(manager);
+
+				if(saved)
+					ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project saved successfully!"});
+				else
+					ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to save project. Check the file path you're saving to. If the problem persists, report this issue!"});
 			}
 		}
-		 */
-		return;
-	});
-
+	};
 
 	//  glfwSetWindowMonitor
 
@@ -140,6 +148,9 @@ window::window() {
 }
 
 window::~window() {
+	// Free input_man
+	input_man.reset();
+
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -171,12 +182,9 @@ void window::window_loop() {
 		static bool first_frame{ true };
 		static bool show_choices{ false };
 
-		if(glfwJoystickPresent(GLFW_JOYSTICK_1) == GLFW_TRUE) {
-			int count;
-			const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
+		static std::string selected_option{};
 
-			//std::cout << "controller funnies: " << axes[0] << "\n";
-		}
+		input_man->input_loop();
 
 		//const auto& render_start = std::chrono::high_resolution_clock::now();
 
@@ -367,80 +375,10 @@ void window::window_loop() {
 
 		//ImGui::ShowDemoWindow();
 
-		if (ImGui::BeginMainMenuBar()) {
-			if (ImGui::BeginMenu("File")) {
-				if (ImGui::MenuItem("New Project")) {
-					manager.remove_all_videos();
-
-					ImGui::InsertNotification({ImGuiToastType::Success, 3000, "New project started successfully!"});
-				} else if (ImGui::MenuItem("Open", "Ctrl+O")) {
-					bool loaded = utilities::load_project(manager);
-
-					if(loaded)
-						ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project loaded successfully!"});
-					else
-						ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to load project. Check the file is right and project isn't corrupted. If the problem persists, report this issue!"});
-				} else if (ImGui::MenuItem("Save", "Ctrl+S")) {
-					bool saved = utilities::save_project(manager);
-
-					if(saved)
-						ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project saved successfully!"});
-					else
-						ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to save project. Check the file path you're saving to. If the problem persists, report this issue!"});
-				} else if (ImGui::MenuItem("Quit")) {
-					close_window();
-				}
-
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("Edit")) {
-				if (ImGui::MenuItem("Project Settings")) {
-					ImGui::InsertNotification({ ImGuiToastType::Error, 3000, "Not currently implemented." });
-				}
-
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("Packaging")) {
-				if (ImGui::BeginMenu("Export")) {
-					if (ImGui::MenuItem("Windows")) {
-						ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
-						/* do stuff */
-					} else if (ImGui::MenuItem("Linux")) {
-						ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
-						/* do stuff */
-					} else if (ImGui::MenuItem("OSX")) {
-						ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
-						/* do stuff */
-					}
-
-					ImGui::EndMenu();
-				}
-
-				ImGui::Checkbox("Release Mode", &testing_export);
-
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("Play")) {
-				if (ImGui::MenuItem("In-Engine")) {
-					ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
-					/* do stuff */
-				} else if (ImGui::MenuItem("Standalone")) {
-					ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
-					/* do stuff */
-				}
-
-				ImGui::EndMenu();
-			}
-
-			ImGui::EndMainMenuBar();
-		}
+		render_window_bar();
 
 		if (show_choices) {
 			if (!manager.current_video.options.empty() && !first_frame) {
-
 				ImVec2 WindowPos(window_width/2, window_height - 40);
 				ImGui::SetNextWindowPos(WindowPos, ImGuiCond_None, ImVec2(0.5f, 0.5f));
 				// ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground (This is to prevent the window from having any looks)
@@ -452,6 +390,10 @@ void window::window_loop() {
 					// Pre-cautions
 					if (opt.second.id.empty() || opt.second.name.empty()) {
 						continue;
+					}
+
+					if(selected_option.empty()) {
+						selected_option = opt.first;
 					}
 
 					std::string option_text(opt.second.name);
@@ -471,13 +413,111 @@ void window::window_loop() {
 						}
 
 						show_choices = false;
+						selected_option = "";
 
 						break;
 					}
+
+					if(input_man->current_input_type == input::Controller) {
+						if(selected_option == opt.first) {
+							ImGui::SetKeyboardFocusHere();
+						}
+					}
+
 					ImGui::SameLine();
 				}
 				ImGui::End();
 			}
+
+			input_man->on_controller_button_press = [&](input::controller_inputs key) {
+				if(key == input::controller_inputs::CONTROLLER_BUTTON_DOWN) {
+					first_frame = true;
+					delete[] frame_data;
+					frame_data = nullptr;
+
+					manager.current_video.name = "";
+
+					//std::cout << "attempting to play: " << opt.second.video_id << "\n";
+					video vid = manager.get_videos()[manager.current_video.options[selected_option].video_id];
+					//std::cout << "video name: " << vid.name << "\n";
+					if (!manager.open_video(&vid_reader, vid)) {
+						std::cout << "Failed to read frame data." << "\n";
+					}
+
+					show_choices = false;
+					selected_option = "";
+				} else if(key == input::controller_inputs::CONTROLLER_BUTTON_DPAD_RIGHT) {
+					bool found{false};
+					for (const auto& opt : manager.current_video.options) {
+						if(found) {
+							selected_option = opt.first;
+							break;
+						} else {
+							// if the current option is this option, then set "found" to true
+							// so the next option can get selected.
+							if(selected_option == opt.first) {
+								found = true;
+							}
+						}
+					}
+
+					if(!found) {
+						for (const auto& opt : manager.current_video.options) {
+							selected_option = opt.first;
+							break;
+						}
+					}
+
+				} else if(key == input::controller_inputs::CONTROLLER_BUTTON_DPAD_LEFT) {
+					std::string previous_id{};
+					for (const auto& opt : manager.current_video.options) {
+						if(selected_option == opt.first) {
+							if(!previous_id.empty())
+								selected_option = previous_id;
+							break;
+						} else {
+							previous_id = opt.first;
+						}
+					}
+				}
+			};
+
+			input_man->on_controller_input = [&](input::controller_inputs input){
+				if(input == input::INPUT_RIGHT) {
+					bool found{false};
+					for (const auto& opt : manager.current_video.options) {
+						if(found) {
+							selected_option = opt.first;
+							break;
+						} else {
+							// if the current option is this option, then set "found" to true
+							// so the next option can get selected.
+							if(selected_option == opt.first) {
+								found = true;
+							}
+						}
+					}
+
+					if(!found) {
+						for (const auto& opt : manager.current_video.options) {
+							selected_option = opt.first;
+							break;
+						}
+					}
+
+				} else if(input == input::INPUT_LEFT) {
+					std::string previous_id{};
+					for (const auto& opt : manager.current_video.options) {
+						if(selected_option == opt.first) {
+							if(!previous_id.empty())
+								selected_option = previous_id;
+							break;
+						} else {
+							previous_id = opt.first;
+						}
+					}
+				}
+			};
 		}
 
 		manager.render_window(vid_reader);
@@ -518,4 +558,71 @@ void window::window_loop() {
 
 void window::close_window() {
 	glfwSetWindowShouldClose(glfw_window, true);
+}
+
+void window::render_window_bar() {
+	if (ImGui::BeginMainMenuBar()) {
+		if (ImGui::BeginMenu("File")) {
+			if (ImGui::MenuItem("New Project")) {
+				manager.remove_all_videos();
+
+				ImGui::InsertNotification({ImGuiToastType::Success, 3000, "New project started successfully!"});
+			} else if (ImGui::MenuItem("Open", "Ctrl+O")) {
+				bool loaded = utilities::load_project(manager);
+
+				if(loaded)
+					ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project loaded successfully!"});
+				else
+					ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to load project. Check the file is right and project isn't corrupted. If the problem persists, report this issue!"});
+			} else if (ImGui::MenuItem("Save", "Ctrl+S")) {
+				bool saved = utilities::save_project(manager);
+
+				if(saved)
+					ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project saved successfully!"});
+				else
+					ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to save project. Check the file path you're saving to. If the problem persists, report this issue!"});
+			} else if (ImGui::MenuItem("Quit")) {
+				close_window();
+			}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Edit")) {
+			if (ImGui::MenuItem("Project Settings")) {
+				ImGui::InsertNotification({ ImGuiToastType::Error, 3000, "Not currently implemented." });
+			}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Export")) {
+			if (ImGui::MenuItem("Windows")) {
+				ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
+				/* do stuff */
+			} else if (ImGui::MenuItem("Linux")) {
+				ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
+				/* do stuff */
+			} else if (ImGui::MenuItem("OSX")) {
+				ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
+				/* do stuff */
+			}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Play")) {
+			if (ImGui::MenuItem("In-Engine")) {
+				ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
+				/* do stuff */
+			} else if (ImGui::MenuItem("Standalone")) {
+				ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
+				/* do stuff */
+			}
+
+			ImGui::EndMenu();
+		}
+
+		ImGui::EndMainMenuBar();
+	}
 }
