@@ -399,6 +399,7 @@ void window::window_loop() {
 					if(input_man->current_input_type == input::CONTROLLER) {
 						if(selected_option == opt.first) {
 							ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_ButtonHovered));
+							ImGui::SetKeyboardFocusHere();
 						}
 					}
 
@@ -427,12 +428,6 @@ void window::window_loop() {
 					if(input_man->current_input_type == input::CONTROLLER) {
 						if (selected_option == opt.first) {
 							ImGui::PopStyleColor();
-						}
-					}
-
-					if(input_man->current_input_type == input::CONTROLLER) {
-						if(selected_option == opt.first) {
-							ImGui::SetKeyboardFocusHere();
 						}
 					}
 
