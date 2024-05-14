@@ -26,11 +26,17 @@ enum controller_inputs {
 	CONTROLLER_BUTTON_DPAD_DOWN = 15,
 	CONTROLLER_BUTTON_DPAD_LEFT = 16,
 	CONTROLLER_BUTTON_DPAD_RIGHT = 17,
+	CONTROLLER_BUTTON_SPECIAL = 18, // Xbox button, PS button, etc.
 };
 
 enum input_types {
-	KEYBOARDANDMOUSE = 0,
-	CONTROLLER = 1,
+	KEYBOARDANDMOUSE,
+	CONTROLLER,
+};
+
+enum controller_types {
+	XBOX,
+	PLAYSTATION
 };
 
 class input_manager {
@@ -52,25 +58,26 @@ public:
 	 * @param key The key that was pressed (look at `GLFW_KEY_`).
 	 *
 	 */
-	std::function<void(int key)> on_keyboard_press{};
+	std::function<void(int key)> on_keyboard_press{nullptr};
 
 	/**
 	 * @brief Controller input event
 	 *
 	 * @param input The input of the controller as `controller_inputs`.
 	 */
-	std::function<void(controller_inputs input)> on_controller_input{};
+	std::function<void(controller_inputs input)> on_controller_input{nullptr};
 
 	/**
 	 * @brief Controller button press event
 	 *
 	 * @param key The controller button as `controller_inputs`.
 	 */
-	std::function<void(controller_inputs key)> on_controller_button_press{};
+	std::function<void(controller_inputs key)> on_controller_button_press{nullptr};
 
 	std::vector<int> keys_held{};
 
-	input_types current_input_type{};
+	input_types current_input_type{input::KEYBOARDANDMOUSE};
+	controller_types current_controller_type{input::XBOX};
 
 private:
 

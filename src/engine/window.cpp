@@ -186,8 +186,6 @@ void window::window_loop() {
 
 		input_man->input_loop();
 
-		//const auto& render_start = std::chrono::high_resolution_clock::now();
-
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Set up orphographic projection
@@ -264,8 +262,6 @@ void window::window_loop() {
 			}
 
 			double pt_in_seconds = pts * (double)vid_reader.time_base.num / (double)vid_reader.time_base.den;
-
-			uint64_t pt_rounded = pt_in_seconds;
 
 			if(pts == 0) {
 				glfwSetTime(0.0);
