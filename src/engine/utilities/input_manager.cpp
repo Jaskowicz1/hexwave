@@ -3,7 +3,7 @@
 #include "utilities/input_manager.h"
 
 input::input_manager::input_manager(GLFWwindow* window) {
-	if(!window) {
+	if (!window) {
 		return;
 	}
 
@@ -15,9 +15,13 @@ input::input_manager::input_manager(GLFWwindow* window) {
 	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 		// Update input type to Keyboard/Mouse.
 		mgr->current_input_type = KEYBOARDANDMOUSE;
-		if(action == GLFW_PRESS) {
+		if (action == GLFW_PRESS) {
 			mgr->keys_held.emplace_back(key);
 			mgr->on_keyboard_press(key);
+		}
+
+		if(action == GLFW_RELEASE) {
+			mgr->keys_held.erase(std::remove(mgr->keys_held.begin(), mgr->keys_held.end(), key), mgr->keys_held.end());
 		}
 	});
 
@@ -37,7 +41,7 @@ input::input_manager::input_manager(GLFWwindow* window) {
 	std::string contents((std::istreambuf_iterator<char>(game_controller_db)),
 			     std::istreambuf_iterator<char>());
 
-	if(glfwUpdateGamepadMappings(contents.c_str()) == GLFW_FALSE) {
+	if (glfwUpdateGamepadMappings(contents.c_str()) == GLFW_FALSE) {
 		std::cout << "Failed to update gamepad mappings." << "\n";
 		return;
 	}
@@ -50,12 +54,11 @@ input::input_manager::~input_manager() {
 }
 
 void input::input_manager::input_loop() {
-	if(glfwJoystickPresent(GLFW_JOYSTICK_1) == GLFW_TRUE) {
-
+	if (glfwJoystickPresent(GLFW_JOYSTICK_1) == GLFW_TRUE) {
 		const char* name = glfwGetJoystickName(GLFW_JOYSTICK_1);
 
 		// Is the controller a Playstation Controller?
-		if(std::string(name).find("DualSense") == 0) {
+		if (std::string(name).find("DualSense") == 0) {
 			current_controller_type = PLAYSTATION;
 		} else {
 			// Default to XBOX if we can't find "DualSense".
@@ -65,14 +68,14 @@ void input::input_manager::input_loop() {
 		int count;
 
 		// Luckily, controller axis input on Playstation isn't any different to Xbox.
-		if(on_controller_input) {
+		if (on_controller_input) {
 			const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
 
 			const float x_axis = axes[0];
 			const float y_axis = axes[1];
 
-			if(abs(x_axis) >= deadzone) {
-				if(x_axis < 0) {
+			if (abs(x_axis) >= deadzone) {
+				if (x_axis < 0) {
 					on_controller_input(INPUT_LEFT);
 				} else {
 					on_controller_input(INPUT_RIGHT);
@@ -81,8 +84,8 @@ void input::input_manager::input_loop() {
 				current_input_type = CONTROLLER;
 			}
 
-			if(abs(y_axis) >= deadzone) {
-				if(y_axis < 0) {
+			if (abs(y_axis) >= deadzone) {
+				if (y_axis < 0) {
 					on_controller_input(INPUT_UP);
 				} else {
 					on_controller_input(INPUT_DOWN);
@@ -93,85 +96,85 @@ void input::input_manager::input_loop() {
 		}
 
 		GLFWgamepadstate state{};
-		if(glfwGetGamepadState(GLFW_JOYSTICK_1, &state) == GLFW_FALSE) {
+		if (glfwGetGamepadState(GLFW_JOYSTICK_1, &state) == GLFW_FALSE) {
 			return;
 		}
 
 		const unsigned char* buttons = state.buttons;
 
 		// Definitely a better way to do below code (mapping buttons to the actual index of the array?) but oh well.
-		if(on_controller_button_press) {
-			if(buttons[0] == GLFW_PRESS) {
+		if (on_controller_button_press) {
+			if (buttons[0] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_DOWN);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[1] == GLFW_PRESS) {
+			if (buttons[1] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_RIGHT);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[2] == GLFW_PRESS) {
+			if (buttons[2] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_LEFT);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[3] == GLFW_PRESS) {
+			if (buttons[3] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_UP);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[4] == GLFW_PRESS) {
+			if (buttons[4] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_LEFT_BUMPER);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[5] == GLFW_PRESS) {
+			if (buttons[5] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_RIGHT_BUMPER);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[6] == GLFW_PRESS) {
+			if (buttons[6] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_OPTION);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[7] == GLFW_PRESS) {
+			if (buttons[7] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_START);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[8] == GLFW_PRESS) {
+			if (buttons[8] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_SPECIAL);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[9] == GLFW_PRESS) {
+			if (buttons[9] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_LEFT_JOYSTICK);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[10] == GLFW_PRESS) {
+			if (buttons[10] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_RIGHT_JOYSTICK);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[11] == GLFW_PRESS) {
+			if (buttons[11] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_DPAD_UP);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[12] == GLFW_PRESS) {
+			if (buttons[12] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_DPAD_RIGHT);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[13] == GLFW_PRESS) {
+			if (buttons[13] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_DPAD_DOWN);
 				current_input_type = CONTROLLER;
 			}
 
-			if(buttons[14] == GLFW_PRESS) {
+			if (buttons[14] == GLFW_PRESS) {
 				on_controller_button_press(CONTROLLER_BUTTON_DPAD_LEFT);
 				current_input_type = CONTROLLER;
 			}

@@ -334,6 +334,8 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 
 	const char* file = vid.path.c_str();
 
+	std::cout << "video path: " << file << "\n";
+
 	state->av_format_ctx = avformat_alloc_context();
 	if(!state->av_format_ctx) {
 		std::cout << "Failed to create an AVFormatContext." << "\n";

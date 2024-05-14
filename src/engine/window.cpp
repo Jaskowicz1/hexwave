@@ -39,7 +39,7 @@ window::window() {
 		exit(EXIT_FAILURE);
 	}
 
-	glfw_window = glfwCreateWindow(1280, 720, "Hexwave - 0.1", nullptr, nullptr);
+	glfw_window = glfwCreateWindow(1280, 720, "Hexwave - 0.2", nullptr, nullptr);
 
 	if (!glfw_window) {
 		std::cout << "Failed to create window." << "\n";
@@ -52,27 +52,33 @@ window::window() {
 	if (!gladLoaderLoadGL())
 		throw std::runtime_error("Error initializing glad");
 
-	GLFWimage images[1];
-	images[0].pixels = stbi_load("extras/HexwaveIcon.png", &images[0].width, &images[0].height, 0, 4); //rgba channels
-	glfwSetWindowIcon(glfw_window, 1, images);
-	stbi_image_free(images[0].pixels);
+	std::ifstream icon_file("extras/HexwaveIcon.png");
+
+	if (icon_file.good()) {
+		GLFWimage images[1];
+		images[0].pixels = stbi_load("extras/HexwaveIcon.png", &images[0].width, &images[0].height, 0, 4); //rgba channels
+		glfwSetWindowIcon(glfw_window, 1, images);
+		stbi_image_free(images[0].pixels);
+	} else {
+		std::cout << "Hexwave icon not found! Continuing without." << "\n";
+	}
 
 	// Initialise Input Manager
 	input_man = std::make_unique<input::input_manager>(glfw_window);
 
 	input_man->on_keyboard_press = [this](int key) {
-		if(std::find(input_man->keys_held.begin(), input_man->keys_held.end(), GLFW_KEY_LEFT_CONTROL) != input_man->keys_held.end()) {
-			if(std::find(input_man->keys_held.begin(), input_man->keys_held.end(), GLFW_KEY_O) != input_man->keys_held.end()) {
-				bool loaded = utilities::load_project(manager);
+		if (std::find(input_man->keys_held.begin(), input_man->keys_held.end(), GLFW_KEY_LEFT_CONTROL) != input_man->keys_held.end()) {
+			if (std::find(input_man->keys_held.begin(), input_man->keys_held.end(), GLFW_KEY_O) != input_man->keys_held.end()) {
+				bool loaded = utilities::load_project(manager, settings);
 
-				if(loaded)
+				if (loaded)
 					ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project loaded successfully!"});
 				else
 					ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to load project. Check the file is right and project isn't corrupted. If the problem persists, report this issue!"});
-			} else if(std::find(input_man->keys_held.begin(), input_man->keys_held.end(), GLFW_KEY_S) != input_man->keys_held.end()) {
-				bool saved = utilities::save_project(manager);
+			} else if (std::find(input_man->keys_held.begin(), input_man->keys_held.end(), GLFW_KEY_S) != input_man->keys_held.end()) {
+				bool saved = utilities::save_project(manager, settings);
 
-				if(saved)
+				if (saved)
 					ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project saved successfully!"});
 				else
 					ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to save project. Check the file path you're saving to. If the problem persists, report this issue!"});
@@ -119,7 +125,7 @@ window::window() {
 	std::ifstream fontAwesomeFile(FONT_ICON_FILE_NAME_FAS);
 
 	if (!fontAwesomeFile.good()) {
-		std::cerr << "Could not find the FontAwesome font file." << std::endl;
+		std::cerr << "Could not find the FontAwesome font file." << "\n";
 		abort();
 	}
 
@@ -145,11 +151,19 @@ window::window() {
 	/**
 	 * End of ImGUI stuff
 	 */
+
+	result = ma_engine_init(NULL, &engine);
+	if (result != MA_SUCCESS) {
+		std::cerr << "Failed to initialize audio engine." << "\n";
+		abort();
+	}
 }
 
 window::~window() {
 	// Free input_man
 	input_man.reset();
+
+	ma_engine_uninit(&engine);
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
@@ -175,6 +189,12 @@ void window::window_loop() {
 	int prev_window_width{ 0 };
 	int prev_window_height{ 0 };
 
+	ImVec2 uv0 = ImVec2(0.0f, 0.0f);                            // UV coordinates for lower-left
+	ImVec2 uv1 = ImVec2(1, 1);
+
+	ImVec4 bg_col = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);		// No Background
+	ImVec4 tint_col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);	// No tint
+
 	while (!glfwWindowShouldClose(glfw_window)) {
 
 		static bool resize_required{ false };
@@ -183,6 +203,8 @@ void window::window_loop() {
 		static bool show_choices{ false };
 
 		static std::string selected_option{};
+		static std::string keyboard_hovered_option{};
+		static std::string keyboard_selected_option{};
 
 		input_man->input_loop();
 
@@ -198,13 +220,35 @@ void window::window_loop() {
 		if (prev_window_width == 0 || prev_window_height == 0) {
 			prev_window_width = window_width;
 			prev_window_height = window_height;
-		}
-		else {
+		} else {
 			if (prev_window_width != window_width || prev_window_height != window_height) {
 				prev_window_width = window_width;
 				prev_window_height = window_height;
 				resize_required = true;
 			}
+		}
+
+		if(!force_video_to_play.empty()) {
+			std::cout << "forcing " << force_video_to_play << " to play..." << "\n";
+			first_frame = true;
+
+			manager.current_video.name = "";
+
+			//std::cout << "attempting to play: " << opt.second.video_id << "\n";
+			video vid = manager.get_videos()[settings.start_id];
+			//std::cout << "video name: " << vid.name << "\n";
+			if (!manager.open_video(&vid_reader, vid)) {
+				std::cout << "Failed to read frame data." << "\n";
+				break;
+			}
+
+			show_choices = false;
+			selected_option = "";
+
+			keyboard_hovered_option = "";
+			keyboard_selected_option = "";
+
+			force_video_to_play = "";
 		}
 
 		if (!manager.current_video.name.empty()) {
@@ -213,9 +257,21 @@ void window::window_loop() {
 				frame_width = vid_reader.width;
 				frame_height = vid_reader.height;
 
+				if(frame_data) {
+					delete[] frame_data;
+					frame_data = nullptr;
+				}
+
 				frame_data = new uint8_t[frame_width * frame_height * 4];
 
 				first_frame = false;
+
+				selected_option = "";
+
+				keyboard_hovered_option = "";
+				keyboard_selected_option = "";
+
+				reload_button_textures();
 			} else {
 				// NEVER attempt to call resize on first frame, it will already allocate correctly.
 				if (resize_required) {
@@ -238,15 +294,13 @@ void window::window_loop() {
 
 					if (vid_reader.width < window_width) {
 						vid_reader.width = window_width;
-					}
-					else {
+					} else {
 						vid_reader.width = vid_reader.init_width;
 					}
 
 					if (vid_reader.height < window_height) {
 						vid_reader.height = window_height;
-					}
-					else {
+					} else {
 						vid_reader.height = vid_reader.init_height;
 					}
 
@@ -256,23 +310,23 @@ void window::window_loop() {
 
 			int64_t pts;
 
-			if(!manager.read_video_frame(glfw_window, &vid_reader, frame_data, &pts)) {
+			if (!manager.read_video_frame(glfw_window, &vid_reader, frame_data, &pts)) {
 				std::cout << "Failed to read frame data." << "\n";
 				break;
 			}
 
 			double pt_in_seconds = pts * (double)vid_reader.time_base.num / (double)vid_reader.time_base.den;
 
-			if(pts == 0) {
+			if (pts == 0) {
 				glfwSetTime(0.0);
 				// somehow, this can happen twice. uh oh
-				if(frame_data) {
+				if (frame_data) {
 					delete[] frame_data;
 					frame_data = nullptr;
 				}
 				first_frame = true;
 
-				if(device_config.pUserData) {
+				if (device_config.pUserData) {
 					ma_device_stop(&device);
 					device_config = {};
 				}
@@ -305,15 +359,17 @@ void window::window_loop() {
 					show_choices = false;
 				}
 
-			} else if(pt_in_seconds >= manager.current_video.length - 0.75 && !first_frame) {
+			} else if (pt_in_seconds >= manager.current_video.length - 0.75 && !first_frame) {
 				std::cout << "End reached, doing next video..." << "\n";
 				first_frame = true;
 				delete[] frame_data;
 				frame_data = nullptr;
 
+				ma_device_uninit(&device);
+
 				manager.current_video.name = "";
 
-				if(!manager.open_video(&vid_reader, manager.next_video)) {
+				if (!manager.open_video(&vid_reader, manager.next_video)) {
 					std::cout << "Failed to read frame data." << "\n";
 					break;
 				}
@@ -388,19 +444,41 @@ void window::window_loop() {
 						continue;
 					}
 
-					if(selected_option.empty()) {
+					if (selected_option.empty()) {
+						std::cout << "setting option!" << "\n";
 						selected_option = opt.first;
 					}
 
-					if(input_man->current_input_type == input::CONTROLLER) {
-						if(selected_option == opt.first) {
-							ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_ButtonHovered));
+					if (input_man->current_input_type == input::CONTROLLER) {
+						if (selected_option == opt.first) {
 							ImGui::SetKeyboardFocusHere();
 						}
 					}
 
+					ImVec2 ButtonCursor = ImGui::GetCurrentWindow()->DC.CursorPos;
+
+					ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
+
 					std::string option_text(opt.second.name);
-					if (ImGui::Button(option_text.c_str(), ImVec2(300, 30))) {
+
+					ImTextureID textureId{};
+					if (input_man->current_input_type == input::KEYBOARDANDMOUSE) {
+						if (!keyboard_selected_option.empty() && keyboard_selected_option == opt.first) {
+							textureId = (void*)(intptr_t)pressed_button_texture;
+						} else if (!keyboard_hovered_option.empty() && keyboard_hovered_option == opt.first) {
+							textureId = (void*)(intptr_t)hovered_button_texture;
+						} else {
+							textureId = (void*)(intptr_t)button_texture;
+						}
+					} else {
+						if (selected_option == opt.first) {
+							textureId = (void*)(intptr_t)hovered_button_texture;
+						} else {
+							textureId = (void*)(intptr_t)button_texture;
+						}
+					}
+
+					if(ImGui::ImageButton(("Option_" + opt.first).c_str(), textureId, ImVec2(button_texture_width, button_texture_height), uv0, uv1, bg_col, tint_col)) {
 						first_frame = true;
 						delete[] frame_data;
 						frame_data = nullptr;
@@ -418,14 +496,56 @@ void window::window_loop() {
 						show_choices = false;
 						selected_option = "";
 
+						keyboard_hovered_option = "";
+						keyboard_selected_option = "";
+
+						ImGui::PopStyleVar();
+
+						ma_result res = ma_engine_play_sound(&engine, settings.button_sound_path.c_str(), nullptr);
+
+						if(res == MA_SUCCESS) {
+							std::cout << "played sound" << "\n";
+						} else {
+							std::cout << "sound didn't play! Reason: " << res << "\n";
+						}
+
+						ma_device_uninit(&device);
+
 						break;
 					}
 
-					if(input_man->current_input_type == input::CONTROLLER) {
+					ImGui::PopStyleVar();
+
+					if (input_man->current_input_type == input::KEYBOARDANDMOUSE) {
+						if(ImGui::IsItemActive()) {
+							//std::cout << "clicked" << "\n";
+							keyboard_selected_option = opt.first;
+						} else if (ImGui::IsItemHovered()) {
+							keyboard_hovered_option = opt.first;
+						} else {
+							if(keyboard_hovered_option == opt.first)
+								keyboard_hovered_option = "";
+
+							if(keyboard_selected_option == opt.first)
+								keyboard_selected_option = "";
+						}
+					}
+
+					ImVec2 size = ImVec2(button_texture_width, button_texture_height);
+
+					const ImRect bb(ButtonCursor, ImVec2(ButtonCursor.x + size.x, ButtonCursor.y + size.y));
+					ImVec2 text_size = ImGui::CalcTextSize(option_text.c_str());
+					ImGuiContext& g = *GImGui;
+					const ImGuiStyle& style = g.Style;
+					ImGui::RenderTextClipped(bb.Min, bb.Max, option_text.c_str(), NULL, &text_size, style.ButtonTextAlign, &bb);
+
+					/*
+					if (input_man->current_input_type == input::CONTROLLER) {
 						if (selected_option == opt.first) {
 							ImGui::PopStyleColor();
 						}
 					}
+					 */
 
 					ImGui::SameLine();
 				}
@@ -433,7 +553,7 @@ void window::window_loop() {
 			}
 
 			input_man->on_controller_button_press = [&](input::controller_inputs key) {
-				if(key == input::controller_inputs::CONTROLLER_BUTTON_DOWN) {
+				if (key == input::controller_inputs::CONTROLLER_BUTTON_DOWN) {
 					first_frame = true;
 					delete[] frame_data;
 					frame_data = nullptr;
@@ -448,34 +568,45 @@ void window::window_loop() {
 					}
 
 					show_choices = false;
-					selected_option = "";
-				} else if(key == input::controller_inputs::CONTROLLER_BUTTON_DPAD_RIGHT) {
+					keyboard_hovered_option = "";
+					keyboard_selected_option = "";
+
+					ma_device_uninit(&device);
+
+					ma_result res = ma_engine_play_sound(&engine, settings.button_sound_path.c_str(), nullptr);
+
+					if(res == MA_SUCCESS) {
+						std::cout << "played sound" << "\n";
+					} else {
+						std::cout << "sound didn't play! Reason: " << res << "\n";
+					}
+				} else if (key == input::controller_inputs::CONTROLLER_BUTTON_DPAD_RIGHT) {
 					bool found{false};
 					for (const auto& opt : manager.current_video.options) {
-						if(found) {
+						if (found) {
 							selected_option = opt.first;
 							break;
 						} else {
 							// if the current option is this option, then set "found" to true
 							// so the next option can get selected.
-							if(selected_option == opt.first) {
+							if (selected_option == opt.first) {
 								found = true;
 							}
 						}
 					}
 
-					if(!found) {
+					if (!found) {
 						for (const auto& opt : manager.current_video.options) {
 							selected_option = opt.first;
 							break;
 						}
 					}
 
-				} else if(key == input::controller_inputs::CONTROLLER_BUTTON_DPAD_LEFT) {
+				} else if (key == input::controller_inputs::CONTROLLER_BUTTON_DPAD_LEFT) {
 					std::string previous_id{};
 					for (const auto& opt : manager.current_video.options) {
-						if(selected_option == opt.first) {
-							if(!previous_id.empty())
+						if (selected_option == opt.first) {
+							if (!previous_id.empty())
 								selected_option = previous_id;
 							break;
 						} else {
@@ -486,33 +617,33 @@ void window::window_loop() {
 			};
 
 			input_man->on_controller_input = [&](input::controller_inputs input){
-				if(input == input::INPUT_RIGHT) {
+				if (input == input::INPUT_RIGHT) {
 					bool found{false};
 					for (const auto& opt : manager.current_video.options) {
-						if(found) {
+						if (found) {
 							selected_option = opt.first;
 							break;
 						} else {
 							// if the current option is this option, then set "found" to true
 							// so the next option can get selected.
-							if(selected_option == opt.first) {
+							if (selected_option == opt.first) {
 								found = true;
 							}
 						}
 					}
 
-					if(!found) {
+					if (!found) {
 						for (const auto& opt : manager.current_video.options) {
 							selected_option = opt.first;
 							break;
 						}
 					}
 
-				} else if(input == input::INPUT_LEFT) {
+				} else if (input == input::INPUT_LEFT) {
 					std::string previous_id{};
 					for (const auto& opt : manager.current_video.options) {
-						if(selected_option == opt.first) {
-							if(!previous_id.empty())
+						if (selected_option == opt.first) {
+							if (!previous_id.empty())
 								selected_option = previous_id;
 							break;
 						} else {
@@ -524,6 +655,7 @@ void window::window_loop() {
 		}
 
 		manager.render_window(vid_reader);
+		settings.render_window();
 
 		/**
 		 * Notifications Rendering Start
@@ -571,16 +703,16 @@ void window::render_window_bar() {
 
 				ImGui::InsertNotification({ImGuiToastType::Success, 3000, "New project started successfully!"});
 			} else if (ImGui::MenuItem("Open", "Ctrl+O")) {
-				bool loaded = utilities::load_project(manager);
+				bool loaded = utilities::load_project(manager, settings);
 
-				if(loaded)
+				if (loaded)
 					ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project loaded successfully!"});
 				else
 					ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to load project. Check the file is right and project isn't corrupted. If the problem persists, report this issue!"});
 			} else if (ImGui::MenuItem("Save", "Ctrl+S")) {
-				bool saved = utilities::save_project(manager);
+				bool saved = utilities::save_project(manager, settings);
 
-				if(saved)
+				if (saved)
 					ImGui::InsertNotification({ImGuiToastType::Success, 3000, "Project saved successfully!"});
 				else
 					ImGui::InsertNotification({ImGuiToastType::Error, 5000, "Failed to save project. Check the file path you're saving to. If the problem persists, report this issue!"});
@@ -593,7 +725,7 @@ void window::render_window_bar() {
 
 		if (ImGui::BeginMenu("Edit")) {
 			if (ImGui::MenuItem("Project Settings")) {
-				ImGui::InsertNotification({ ImGuiToastType::Error, 3000, "Not currently implemented." });
+				settings.show_window = !settings.show_window;
 			}
 
 			ImGui::EndMenu();
@@ -616,8 +748,7 @@ void window::render_window_bar() {
 
 		if (ImGui::BeginMenu("Play")) {
 			if (ImGui::MenuItem("In-Engine")) {
-				ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
-				/* do stuff */
+				force_video_to_play = settings.start_id;
 			} else if (ImGui::MenuItem("Standalone")) {
 				ImGui::InsertNotification({ImGuiToastType::Error, 3000, "Not currently implemented."});
 				/* do stuff */
@@ -628,4 +759,21 @@ void window::render_window_bar() {
 
 		ImGui::EndMainMenuBar();
 	}
+}
+
+void window::reload_button_textures() {
+	if(!utilities::LoadTextureFromFile(settings.normal_button_path, &button_texture, &button_texture_width, &button_texture_height)) {
+		std::cout << "Failed to find button image." << "\n";
+		return;
+	};
+
+	if(!utilities::LoadTextureFromFile(settings.hovered_button_path, &hovered_button_texture)) {
+		std::cout << "Failed to find hovered button image." << "\n";
+		return;
+	};
+
+	if(!utilities::LoadTextureFromFile(settings.selected_button_path, &pressed_button_texture)) {
+		std::cout << "Failed to find pressed button image." << "\n";
+		return;
+	};
 }
