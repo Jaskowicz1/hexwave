@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <chrono>
 #include "GLFW/glfw3.h"
 
 namespace input {
@@ -81,6 +82,7 @@ public:
 
 private:
 
+	std::chrono::time_point<std::chrono::high_resolution_clock> last_input;
 	float deadzone = 0.2;
 };
 

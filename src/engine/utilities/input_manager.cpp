@@ -46,6 +46,8 @@ input::input_manager::input_manager(GLFWwindow* window) {
 		return;
 	}
 
+	last_input = std::chrono::high_resolution_clock::now();
+
 	std::cout << "Input manager has setup successfully!" << "\n";
 }
 
@@ -105,78 +107,139 @@ void input::input_manager::input_loop() {
 		// Definitely a better way to do below code (mapping buttons to the actual index of the array?) but oh well.
 		if (on_controller_button_press) {
 			if (buttons[0] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_DOWN);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_DOWN);
+					current_input_type = CONTROLLER;
+					last_input = std::chrono::high_resolution_clock::now();
+				}
 			}
 
 			if (buttons[1] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_RIGHT);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_RIGHT);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[2] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_LEFT);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_LEFT);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[3] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_UP);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_UP);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[4] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_LEFT_BUMPER);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_LEFT_BUMPER);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[5] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_RIGHT_BUMPER);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_RIGHT_BUMPER);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[6] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_OPTION);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_OPTION);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[7] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_START);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_START);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[8] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_SPECIAL);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_SPECIAL);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[9] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_LEFT_JOYSTICK);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_LEFT_JOYSTICK);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[10] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_RIGHT_JOYSTICK);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_RIGHT_JOYSTICK);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[11] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_DPAD_UP);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_DPAD_UP);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[12] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_DPAD_RIGHT);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_DPAD_RIGHT);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[13] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_DPAD_DOWN);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_DPAD_DOWN);
+					current_input_type = CONTROLLER;
+				}
 			}
 
 			if (buttons[14] == GLFW_PRESS) {
-				on_controller_button_press(CONTROLLER_BUTTON_DPAD_LEFT);
-				current_input_type = CONTROLLER;
+				const auto now_time = std::chrono::high_resolution_clock::now();
+				const auto result = std::chrono::duration_cast<std::chrono::milliseconds>(now_time - last_input);
+				if(result.count() >= 100) {
+					on_controller_button_press(CONTROLLER_BUTTON_DPAD_LEFT);
+					current_input_type = CONTROLLER;
+				}
 			}
 		}
 	}

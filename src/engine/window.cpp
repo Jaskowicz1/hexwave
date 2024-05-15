@@ -553,6 +553,10 @@ void window::window_loop() {
 			}
 
 			input_man->on_controller_button_press = [&](input::controller_inputs key) {
+				if (!show_choices) {
+					return;
+				}
+
 				if (key == input::controller_inputs::CONTROLLER_BUTTON_DOWN) {
 					first_frame = true;
 					delete[] frame_data;
@@ -617,6 +621,10 @@ void window::window_loop() {
 			};
 
 			input_man->on_controller_input = [&](input::controller_inputs input){
+				if (!show_choices) {
+					return;
+				}
+
 				if (input == input::INPUT_RIGHT) {
 					bool found{false};
 					for (const auto& opt : manager.current_video.options) {
