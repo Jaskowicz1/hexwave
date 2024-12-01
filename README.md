@@ -1,4 +1,4 @@
-<div align="center"><img src="extras/HexwaveIcon.png" width="256" height="256" alt="Hexwave"/>
+<div align="center"><img src="extras/HexwaveHeader.png" width="959" height="389" alt="Hexwave"/>
 <h3>An Open-Source Interactive Film Engine that lets you create Interactive Films with ease.</h3>
 <br />
 
