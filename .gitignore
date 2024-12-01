@@ -21,3 +21,6 @@ testing
 
 # Apple stuff.
 .DS_Store
+
+# Any zips because not needed
+*.zip

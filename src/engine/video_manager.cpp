@@ -6,10 +6,6 @@
 #include "imgui_internal.h"
 #include "ImGuiNotify.hpp"
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #if LIBAVFORMAT_VERSION_MAJOR < 59
 	#ifndef FFMPEG_LEGACY
 	#define FFMPEG_LEGACY
@@ -333,6 +329,8 @@ bool video_manager::open_video(video_reader *state, const video& vid) {
 	av_packet_free(&state->av_packet);
 
 	const char* file = vid.path.c_str();
+
+	std::cout << "video path: " << file << "\n";
 
 	state->av_format_ctx = avformat_alloc_context();
 	if(!state->av_format_ctx) {

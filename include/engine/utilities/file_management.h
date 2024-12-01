@@ -1,10 +1,13 @@
 #pragma once
 
-#include "video_manager.h"
-
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
+#include "video_manager.h"
+#include "project_settings.h"
+
+#include <glad/gl.h>
 
 namespace utilities {
 
@@ -42,23 +45,28 @@ public:
 };
 #endif
 
+// Simple helper function to load an image into a OpenGL texture with common settings
+bool LoadTextureFromFile(const std::string& filename, GLuint* out_texture, int* out_width = nullptr, int* out_height = nullptr);
+
 /**
  * @brief Save the current project
  *
  * @param manager The video manager with the videos.
+ * @param settings The project settings to save.
  *
  * @return bool true if project was able to save
  */
-bool save_project(video_manager& manager);
+bool save_project(video_manager& manager, project_settings& settings);
 
 /**
  * @brief Load a project.
  *
- * @brief The video manager to load the videos to.
+ * @param manager The video manager to load the videos to.
+ * @param settings The project settings to load the settings to.
  *
  * @return bool true if project was loaded successfully.
  */
-bool load_project(video_manager& manager);
+bool load_project(video_manager& manager, project_settings& settings);
 
 /**
  * @brief Opens a file prompt to retrieve a file path.

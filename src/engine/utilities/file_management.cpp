@@ -4,16 +4,19 @@
 #include <set>
 #include "utilities/file_management.h"
 
-bool utilities::save_project(video_manager& manager) {
+#include "stb_image.h"
+#include "project_settings.h"
+
+bool utilities::save_project(video_manager& manager, project_settings& settings) {
 
 	std::string filename{get_file_from_prompt(true, "Save Project", "Hexwave Project | *.hexw", "Hexwave Project\0*.hexw\0")};
 
-	if(filename.empty()) {
+	if (filename.empty()) {
 		return false;
 	}
 
 	// Does filename NOT end in ".hexw"?
-	if(filename.compare(filename.size() - hexwave_project_ext.size(), hexwave_project_ext.size(), hexwave_project_ext) != 0) {
+	if (filename.compare(filename.size() - hexwave_project_ext.size(), hexwave_project_ext.size(), hexwave_project_ext) != 0) {
 		// because file doesn't end in ".hexw", we need to add ".hexw" to it to ensure all files end in that.
 		filename.append(hexwave_project_ext);
 	}
@@ -26,6 +29,7 @@ bool utilities::save_project(video_manager& manager) {
 	}
 
 	j["videos"] = video_array;
+	j["project_settings"] = utilities::to_json(settings);
 
 	// will auto close on deconstructor
 	std::ofstream project_file(filename);
@@ -34,11 +38,11 @@ bool utilities::save_project(video_manager& manager) {
 	return true;
 }
 
-bool utilities::load_project(video_manager& manager) {
+bool utilities::load_project(video_manager& manager, project_settings& settings) {
 
 	std::string filename{get_file_from_prompt(false, "Open Project", "Hexwave Project | *.hexw", "Hexwave Project\0*.hexw\0")};
 
-	if(filename.empty()) {
+	if (filename.empty()) {
 		return false;
 	}
 
@@ -67,6 +71,9 @@ bool utilities::load_project(video_manager& manager) {
 					opt["name"].get<std::string>(), opt["video_id"].get<std::string>());
 			}
 		}
+
+		settings.fill_from_json(&j["project_settings"]);
+
 	}
 	catch (const json::parse_error& exception) {
 		std::cout << exception.what() << "\n";
@@ -88,7 +95,7 @@ std::string utilities::get_file_from_prompt(const bool is_save, const std::strin
 
 	// Might be possible to just not use fgets, should look into this.
 	// Will be true if fgets is nullptr (invalid).
-	if(fgets(filename, 1024, f) == nullptr) {
+	if (fgets(filename, 1024, f) == nullptr) {
 		return "";
 	}
 
@@ -117,7 +124,7 @@ std::string utilities::get_file_from_prompt(const bool is_save, const std::strin
 
 #endif
 
-	if(std::strlen(filename) == 0) {
+	if (std::strlen(filename) == 0) {
 		return "";
 	}
 
@@ -127,4 +134,42 @@ std::string utilities::get_file_from_prompt(const bool is_save, const std::strin
 	}
 
 	return filename;
+}
+
+
+bool utilities::LoadTextureFromFile(const std::string& filename, GLuint* out_texture, int* out_width, int* out_height) {
+	// Load from file
+	int image_width = 0;
+	int image_height = 0;
+	unsigned char* image_data = stbi_load(filename.c_str(), &image_width, &image_height, nullptr, 4);
+	if (image_data == nullptr)
+		return false;
+
+	// Create a OpenGL texture identifier
+	GLuint image_texture;
+	glGenTextures(1, &image_texture);
+	glBindTexture(GL_TEXTURE_2D, image_texture);
+
+	// Setup filtering parameters for display
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // This is required on WebGL for non power-of-two textures
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Same
+
+	// Upload pixels into texture
+#if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+	stbi_image_free(image_data);
+
+	*out_texture = image_texture;
+
+	if(out_width)
+		*out_width = image_width;
+
+	if(out_height)
+		*out_height = image_height;
+
+	return true;
 }
