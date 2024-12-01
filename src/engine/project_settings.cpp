@@ -1,27 +1,29 @@
 #include <fstream>
 #include "project_settings.h"
-#include "imgui.h"
 #include "utilities/file_management.h"
+#include "imgui.h"
 #include "ImGuiNotify.hpp"
 
 void project_settings::render_window() {
-	if(!show_window) {
+	if (!show_window) {
 		return;
 	}
 
-	if(ImGui::Begin("Project Settings")) {
-
+	if (ImGui::Begin("Project Settings")) {
 		static char start_vid_id[1024];
-		if(!start_id.empty())
+		if (!start_id.empty()) {
 			std::memcpy(start_vid_id, start_id.c_str(), start_id.length());
+		}
+
 		if(ImGui::InputText("Starting Video ID", start_vid_id, IM_ARRAYSIZE(start_vid_id))) {
 			start_id = start_vid_id;
 		}
 
-
 		static char button_texture_path[1024];
-		if(!normal_button_path.empty())
+		if (!normal_button_path.empty()) {
 			std::memcpy(button_texture_path, normal_button_path.c_str(), normal_button_path.length());
+		}
+
 		if(ImGui::InputText("Normal Button Texture Path", button_texture_path, IM_ARRAYSIZE(button_texture_path))) {
 			normal_button_path = button_texture_path;
 		}
@@ -41,13 +43,16 @@ void project_settings::render_window() {
 		}
 
 		static char hovered_button_texture_path[1024];
-		if(!hovered_button_path.empty())
+		if (!hovered_button_path.empty()) {
 			std::memcpy(hovered_button_texture_path, hovered_button_path.c_str(), hovered_button_path.length());
-		if(ImGui::InputText("Hovered Button Texture Path", hovered_button_texture_path, IM_ARRAYSIZE(hovered_button_texture_path))) {
+		}
+
+		if (ImGui::InputText("Hovered Button Texture Path", hovered_button_texture_path, IM_ARRAYSIZE(hovered_button_texture_path))) {
 			hovered_button_path = hovered_button_texture_path;
 		}
 
 		ImGui::SameLine();
+
 		if (ImGui::Button(std::string("Select Image##002").c_str())) {
 			std::string image_path{utilities::get_file_from_prompt(false, "Select Image", "Image File | *.png *.jpg", "PNG\0*.png\0JPEG\0*.jpg\0All\0*.*\0")};
 
@@ -61,13 +66,16 @@ void project_settings::render_window() {
 		}
 
 		static char selected_button_texture_path[1024];
-		if(!selected_button_path.empty())
+		if (!selected_button_path.empty()) {
 			std::memcpy(selected_button_texture_path, selected_button_path.c_str(), selected_button_path.length());
-		if(ImGui::InputText("Selected Button Texture Path", selected_button_texture_path, IM_ARRAYSIZE(selected_button_texture_path))) {
+		}
+
+		if (ImGui::InputText("Selected Button Texture Path", selected_button_texture_path, IM_ARRAYSIZE(selected_button_texture_path))) {
 			selected_button_path = selected_button_texture_path;
 		}
 
 		ImGui::SameLine();
+
 		if (ImGui::Button(std::string("Select Image##003").c_str())) {
 			std::string image_path{utilities::get_file_from_prompt(false, "Select Image", "Image File | *.png *.jpg", "PNG\0*.png\0JPEG\0*.jpg\0All\0*.*\0")};
 
@@ -81,13 +89,16 @@ void project_settings::render_window() {
 		}
 
 		static char button_pressed_sound[1024];
-		if(!button_sound_path.empty())
+		if (!button_sound_path.empty()) {
 			std::memcpy(button_pressed_sound, button_sound_path.c_str(), button_sound_path.length());
-		if(ImGui::InputText("Button Pressed Sound Path", button_pressed_sound, IM_ARRAYSIZE(button_pressed_sound))) {
+		}
+
+		if (ImGui::InputText("Button Pressed Sound Path", button_pressed_sound, IM_ARRAYSIZE(button_pressed_sound))) {
 			button_sound_path = button_pressed_sound;
 		}
 
 		ImGui::SameLine();
+
 		if (ImGui::Button(std::string("Select Sound").c_str())) {
 			std::string sound_path{utilities::get_file_from_prompt(false, "Select Sound", "Sound File | *.mp3 *.wav", "MP3\0*.mp3\0WAV\0*.wav\0All\0*.*\0")};
 

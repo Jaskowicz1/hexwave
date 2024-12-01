@@ -1,13 +1,13 @@
 #pragma once
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "video_manager.h"
 #include "project_settings.h"
 
 #include <glad/gl.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 namespace utilities {
 

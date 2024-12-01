@@ -6,10 +6,6 @@
 #include "imgui_internal.h"
 #include "ImGuiNotify.hpp"
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #if LIBAVFORMAT_VERSION_MAJOR < 59
 	#ifndef FFMPEG_LEGACY
 	#define FFMPEG_LEGACY
