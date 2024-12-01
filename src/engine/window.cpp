@@ -39,7 +39,7 @@ window::window() {
 		exit(EXIT_FAILURE);
 	}
 
-	glfw_window = glfwCreateWindow(1280, 720, "Hexwave - 0.2", nullptr, nullptr);
+	glfw_window = glfwCreateWindow(1280, 720, "Hexwave - 0.3", nullptr, nullptr);
 
 	if (!glfw_window) {
 		std::cout << "Failed to create window." << "\n";
@@ -152,7 +152,7 @@ window::window() {
 	 * End of ImGUI stuff
 	 */
 
-	result = ma_engine_init(NULL, &engine);
+	result = ma_engine_init(nullptr, &engine);
 	if (result != MA_SUCCESS) {
 		std::cerr << "Failed to initialize audio engine." << "\n";
 		abort();
@@ -181,18 +181,16 @@ void window::window_loop() {
 	ma_device_config device_config{};
 	ma_device device{};
 
-	bool started_audio = false;
-
 	int window_width{0};
 	int window_height{0};
 
 	int prev_window_width{ 0 };
 	int prev_window_height{ 0 };
 
-	ImVec2 uv0 = ImVec2(0.0f, 0.0f);                            // UV coordinates for lower-left
-	ImVec2 uv1 = ImVec2(1, 1);
+	ImVec2 uv0 = ImVec2(0.0f, 0.0f); // UV coordinates for lower-left
+	ImVec2 uv1 = ImVec2(1, 1); // UV coordinates for upper-right
 
-	ImVec4 bg_col = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);		// No Background
+	ImVec4 bg_col = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);	// No Background
 	ImVec4 tint_col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);	// No tint
 
 	while (!glfwWindowShouldClose(glfw_window)) {

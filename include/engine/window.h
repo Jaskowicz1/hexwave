@@ -32,12 +32,12 @@ private:
 
 	struct GLFWwindow* glfw_window{nullptr};
 
-	uint16_t frame_width{0}; // vid_reader.height
-	uint16_t frame_height{0}; // vid_reader.height
+	uint16_t frame_width { 0 }; // vid_reader.height
+	uint16_t frame_height { 0 }; // vid_reader.height
 
 	GLuint video_texture;
 
-	glm::vec2 vertices[4] = {{-1, -1}, {-1, 1}, {1, 1}, {1, -1}};
+	glm::vec2 vertices[4] = { {-1, -1}, {-1, 1}, {1, 1}, {1, -1} };
 
 	void render_window_bar();
 
@@ -47,8 +47,8 @@ private:
 	// This is a temp solution to forcing a video to play next frame.
 	std::string force_video_to_play{};
 
-	int button_texture_width = 0;
-	int button_texture_height = 0;
+	int button_texture_width { 0 };
+	int button_texture_height { 0 };
 	GLuint button_texture{};
 	GLuint hovered_button_texture{};
 	GLuint pressed_button_texture{};
