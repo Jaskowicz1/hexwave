@@ -65,7 +65,7 @@ void input::input_manager::input_loop() {
 	const char *name = glfwGetJoystickName(GLFW_JOYSTICK_1);
 
 	// Is the controller a Playstation Controller?
-	if (std::string(name).find("DualSense") == 0) {
+	if (std::string(name).find("DualSense") == 0 || std::string(name).find("DualShock") == 0) {
 		current_controller_type = PLAYSTATION;
 	} else {
 		// Default to XBOX if we can't find "DualSense".
@@ -75,7 +75,6 @@ void input::input_manager::input_loop() {
 	{
 		int count;
 
-		// Luckily, controller axis input on Playstation isn't any different to Xbox.
 		const float *axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
 
 		const float x_axis = axes[0];
