@@ -1,3 +1,5 @@
+## This repo has been moved to https://codeberg.org/Jaskowicz/hexwave
+
 <div align="center"><img src="extras/HexwaveHeader.png" width="959" height="389" alt="Hexwave"/>
 <h3>An Open-Source Interactive Film Engine that lets you create Interactive Films with ease.</h3>
 <br />
